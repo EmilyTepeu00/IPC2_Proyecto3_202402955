@@ -21,8 +21,25 @@ def enviar_configuracion(request):
                 "mensaje": str(e)
             })
     
-    #Si es GET, se muestra el formulario
+    #GET: se muestra el formulario
     return render(request, 'enviar_configuracion.html')
+
+#VISTA PARA ENVIAR MENSAJES DE CONSUMO
+def enviar_consumo(request):
+    if request.method == 'POST':
+        try:
+            return JsonResponse({
+                "estado": "exito",
+                "mensaje": "Funcion de enviar consumoooooo"
+            })
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": str(e)
+            })
+    
+    #GET: Mostrar formulario
+    return render(request, 'enviar_consumo.html')
 
 #VISTA PARA INICIALIZAR/RESETEAR EL SISTEMA
 def inicializar_sistema(request):

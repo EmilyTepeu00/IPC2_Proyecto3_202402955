@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tecnologías Chapinas</title>
+</head>
+<body>
+    <h1>Tecnologías Chapinas, S.A.</h1>
+    <p>Sistema de Facturación de Recursos en la Nube</p>
+    
+    <nav>
+        <h2>Operaciones del Sistema</h2>
+        <ul>
+            <li><a href="/enviar-configuracion/">Enviar Mensaje de Configuración</a></li>
+            <li><a href="/enviar-consumo/">Enviar Mensaje de Consumo</a></li>
+            <li>
+                <form action="/inicializar-sistema/" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit">Inicializar Sistema</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</body>
+</html>
