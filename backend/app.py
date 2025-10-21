@@ -14,7 +14,9 @@ os.makedirs(DATA_DIR, exist_ok=True)
 ARCHIVO_RECURSOS = os.path.join(DATA_DIR, 'recursos.xml')
 ARCHIVO_CATEGORIAS = os.path.join(DATA_DIR, 'categorias.xml')
 ARCHIVO_CLIENTES = os.path.join(DATA_DIR, 'clientes.xml')
+ARCHIVO_CONFIGURACIONES = os.path.join(DATA_DIR, 'configuraciones.xml')
 ARCHIVO_INSTANCIAS = os.path.join(DATA_DIR, 'instancias.xml')
+ARCHIVO_CONSUMOS = os.path.join(DATA_DIR, 'consumos.xml')
 
 #CREAR ARCHIVOS XML BASE SI NO EXISTEN
 def inicializar_archivos_xml():
@@ -22,7 +24,9 @@ def inicializar_archivos_xml():
         ARCHIVO_RECURSOS: 'recursos',
         ARCHIVO_CATEGORIAS: 'categorias', 
         ARCHIVO_CLIENTES: 'clientes',
-        ARCHIVO_INSTANCIAS: 'instancias'
+        ARCHIVO_CONFIGURACIONES: 'configuraciones',
+        ARCHIVO_INSTANCIAS: 'instancias',
+        ARCHIVO_CONSUMOS: 'consumos'
     }
 
     for archivo, tag_raiz in archivos_config.items():
@@ -31,6 +35,101 @@ def inicializar_archivos_xml():
             tree = ET.ElementTree(root)
             tree.write(archivo, encoding='utf-8', xml_declaration=True)
 
+#VERIFICAR SI UN ELEMENTO YA EXISTE EN EL XML
+def elemento_existe(archivo, atributo, valor):
+    try:
+        tree = ET.parse(archivo)
+        root = tree.getroot()
+        return root.find(f".//*[@{atributo}='{valor}']") is not None
+    except:
+        return False
+    
+#AGREGAR UN RECURSO AL XML
+def agregar_recurso(recurso_data):
+    try:
+        tree = ET.parse(ARCHIVO_RECURSOS)
+        root = tree.getroot()
+
+        #Verificar si ya existe
+        if elemento_existe(ARCHIVO_RECURSOS, 'id', recurso_data['id']):
+            return False
+        
+        #Crear elemento recuros
+        recurso_elem = ET.Element('recurso')
+        recurso_elem.set('id', recurso_data['id'])
+
+        ET.SubElement(recurso_elem, 'nombre').text = recurso_data['nombre']
+        ET.SubElement(recurso_elem, 'abreviatura').text = recurso_data['abreviatura']
+        ET.SubElement(recurso_elem, 'metrica').text = recurso_data['metrica']
+        ET.SubElement(recurso_elem, 'tipo').text = recurso_data['tipo']
+        ET.SubElement(recurso_elem, 'valorXhora').text = str(recurso_data['valorXhora'])
+
+        root.append(recurso_elem)
+        tree.write(ARCHIVO_RECURSOS, encoding='utf-8', xml_declaration=True)
+        return True
+    
+    except Exception as e:
+        print(f"Error guardando recurso: {e}")
+        return False
+    
+#AGREGAR UNA CATEGORIA AL XML
+def agregar_categoria(categoria_data):
+    try:
+        tree = ET.parse(ARCHIVO_CATEGORIAS)
+        root = tree.getroot()
+
+        if elemento_existe(ARCHIVO_CATEGORIAS, 'id', categoria_data['id']):
+            return False
+        
+        categoria_elem = ET.Element('categoria')
+        categoria_elem.set('id', categoria_data['id'])
+
+        ET.SubElement(categoria_elem, 'nombre').text = categoria_data['nombre']
+        ET.SubElement(categoria_elem, 'description').text = categoria_data['descripcion']
+        ET.SubElement(categoria_elem, 'cargaTrabajo').text = categoria_data['cargaTrabajo']
+
+        #Agregar lista de configuraciones vacia
+        lista_config = ET.SubElement(categoria_elem, 'listaConfiguraciones')
+        
+        root.append(categoria_elem)
+        tree.write(ARCHIVO_CATEGORIAS, encoding='utf-8', xml_declaration=True)
+        return True
+    
+    except Exception as e:
+        print(f"Error guardando categoría: {e}")
+        return False
+    
+#AGREGAR UN CLIENTE AL XML
+def agregar_cliente(cliente_data):
+    try:
+        tree = ET.parse(ARCHIVO_CLIENTES)
+        root = tree.getroot()
+
+        if elemento_existe(ARCHIVO_CLIENTES, 'nit', cliente_data['nit']):
+            return False
+        
+        cliente_elem = ET.Element('cliente')
+        cliente_elem.set('nit', cliente_data['nit'])
+
+        ET.SubElement(cliente_elem, 'nombre').text = cliente_data['nombre']
+        ET.SubElement(cliente_elem, 'usuario').text = cliente_data['usuario']
+        ET.SubElement(cliente_elem, 'clave').text = cliente_data['clave']
+        ET.SubElement(cliente_elem, 'direccion').text = cliente_data['direccion']
+        ET.SubElement(cliente_elem, 'correoElectronico').text = cliente_data['correoElectronico']
+
+        #Agregar lista de instancias vacia
+        lista_instancias = ET.SubElement(cliente_elem, 'listaInstancias')
+
+        lista_instancias = ET.SubElement(cliente_elem, 'listaInstancias')
+        
+        root.append(cliente_elem)
+        tree.write(ARCHIVO_CLIENTES, encoding='utf-8', xml_declaration=True)
+        return True
+    
+    except Exception as e:
+        print(f"Error guardando cliente: {e}")
+        return False
+ 
 
 #CLASE PARA VALIDACIONES CON EXPRESIONES REGULARES
 class Validador:
