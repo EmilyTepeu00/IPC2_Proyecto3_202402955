@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Datos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .creation-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
+        .option-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 2px dashed #dee2e6; text-align: center; }
+        .option-card h3 { margin-top: 0; color: #495057; }
+        .option-card p { color: #6c757d; margin-bottom: 15px; }
+        .btn { 
+            padding: 10px 20px; 
+            background: #1dbb42; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { background: #288d3e; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Creación de Nuevos Datos</h1>
+        <p>Utilice los mismos APIs que los mensajes XML para crear nueva información en el sistema</p>
+
+        <div class="creation-options">
+            <div class="option-card">
+                <h3>📦 Nuevo Recurso</h3>
+                <p>Agregar un nuevo recurso de hardware o software al sistema</p>
+                <button class="btn" onclick="mostrarFormulario('recurso')">Crear Recurso</button>
+            </div>
+
+            <div class="option-card">
+                <h3>📁 Nueva Categoría</h3>
+                <p>Crear una nueva categoría de configuraciones</p>
+                <button class="btn" onclick="mostrarFormulario('categoria')">Crear Categoría</button>
+            </div>
+
+            <div class="option-card">
+                <h3>⚙️ Nueva Configuración</h3>
+                <p>Definir una nueva configuración dentro de una categoría</p>
+                <button class="btn" onclick="mostrarFormulario('configuracion')">Crear Configuración</button>
+            </div>
+
+            <div class="option-card">
+                <h3>👤 Nuevo Cliente</h3>
+                <p>Registrar un nuevo cliente en el sistema</p>
+                <button class="btn" onclick="mostrarFormulario('cliente')">Crear Cliente</button>
+            </div>
+
+            <div class="option-card">
+                <h3>🖥️ Nueva Instancia</h3>
+                <p>Aprovisionar una nueva instancia para un cliente</p>
+                <button class="btn" onclick="mostrarFormulario('instancia')">Crear Instancia</button>
+            </div>
+
+            <div class="option-card">
+                <h3>📊 Nuevo Consumo</h3>
+                <p>Registrar consumo de recursos para una instancia</p>
+                <button class="btn" onclick="mostrarFormulario('consumo')">Registrar Consumo</button>
+            </div>
+        </div>
+
+        <div id="formulario-container" style="display: none; margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px;">
+            <h3 id="form-title">Formulario</h3>
+            <div id="form-content">
+                <p>faltaaaaaaa</p>
+            </div>
+            <button class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+        </div>
+
+        <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
+    </div>
+
+    <script>
+        function mostrarFormulario(tipo) {
+            const titulos = {
+                'recurso': 'Crear Nuevo Recurso',
+                'categoria': 'Crear Nueva Categoría', 
+                'configuracion': 'Crear Nueva Configuración',
+                'cliente': 'Registrar Nuevo Cliente',
+                'instancia': 'Aprovisionar Nueva Instancia',
+                'consumo': 'Registrar Nuevo Consumo'
+            };
+
+            document.getElementById('form-title').textContent = titulos[tipo] || 'Formulario';
+            document.getElementById('formulario-container').style.display = 'block';
+        }
+
+        function ocultarFormulario() {
+            document.getElementById('formulario-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

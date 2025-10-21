@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proceso de Facturación</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .facturacion-form { background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #495057; }
+        input[type="date"] { padding: 10px; border: 1px solid #ced4da; border-radius: 4px; width: 200px; }
+        .btn { 
+            padding: 12px 24px; 
+            background: #c52f3e; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover { background: #a33b43; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+        .resultado { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .factura-info { background: white; padding: 15px; border-radius: 6px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proceso de Facturación</h1>
+        <p>Genere facturas para clientes por recursos consumidos no facturados previamente</p>
+
+        <div class="facturacion-form">
+            <h3>📅 Seleccionar Rango de Fechas</h3>
+            <form id="facturacionForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="fecha_inicio">Fecha de Inicio:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label for="fecha_fin">Fecha de Fin:</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" required>
+                </div>
+                <button type="submit" class="btn" id="btnGenerar">Generar Facturas</button>
+            </form>
+        </div>
+
+        <div id="resultado" class="resultado">
+            <h3>Resultado del Proceso</h3>
+            <div id="facturas-generadas"></div>
+        </div>
+
+        <a href="{% url 'index' %}" class="back-link">← Volver al Inicio</a>
+    </div>
+
+    <script>
+        document.getElementById('facturacionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btnGenerar = document.getElementById('btnGenerar');
+            const resultadoDiv = document.getElementById('resultado');
+            const facturasDiv = document.getElementById('facturas-generadas');
+            
+            btnGenerar.disabled = true;
+            btnGenerar.textContent = 'Generando...';
+            
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
+            
+            //Simular proceso de facturacion
+            setTimeout(() => {
+                resultadoDiv.className = 'resultado exito';
+                facturasDiv.innerHTML = `
+                    <div class="factura-info">
+                        <h4>Facturas Generadas</h4>
+                        <p><strong>Número de Factura:</strong> FAC-001</p>
+                        <p><strong>Cliente:</strong> IPC (NIT: 32644-5)</p>
+                        <p><strong>Fecha de Factura:</strong> ${document.getElementById('fecha_fin').value}</p>
+                        <p><strong>Monto a Pagar:</strong> Q 1,250.00</p>
+                        <p><strong>Instancias facturadas:</strong> 2</p>
+                    </div>
+                    <div class="factura-info">
+                        <h4>Resumen del Proceso</h4>
+                        <p>• Facturas generadas: 1</p>
+                        <p>• Clientes procesados: 1</p>
+                        <p>• Consumos facturados: 5</p>
+                        <p>• Monto total: Q 1,250.00</p>
+                    </div>
+                `;
+                
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = 'Generar Facturas';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
