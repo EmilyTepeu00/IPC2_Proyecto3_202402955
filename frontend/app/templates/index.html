@@ -4,23 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tecnologías Chapinas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .menu { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .menu h2 { color: #333; border-bottom: 2px solid #47a0db; padding-bottom: 10px; }
+        .menu ul { list-style: none; padding: 0; }
+        .menu li { margin: 10px 0; }
+        .menu a { 
+            display: block; 
+            padding: 12px; 
+            background: #007acc; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .menu a:hover { background: #164d77; }
+        .operaciones { margin-top: 30px; }
+        .operaciones h3 { color: #666; }
+        form { display: inline; }
+        button { 
+            padding: 10px 15px; 
+            background: #2dc350; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #0daf30; }
+    </style>
 </head>
 <body>
-    <h1>Tecnologías Chapinas, S.A.</h1>
-    <p>Sistema de Facturación de Recursos en la Nube</p>
-    
-    <nav>
-        <h2>Operaciones del Sistema</h2>
-        <ul>
-            <li><a href="/enviar-configuracion/">Enviar Mensaje de Configuración</a></li>
-            <li><a href="/enviar-consumo/">Enviar Mensaje de Consumo</a></li>
-            <li>
-                <form action="/inicializar-sistema/" method="post" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit">Inicializar Sistema</button>
-                </form>
-            </li>
-        </ul>
-    </nav>
+    <div class="container">
+        <h1>Tecnologías Chapinas, S.A.</h1>
+        <p><strong>Sistema de Facturación de Recursos en la Nube</strong></p>
+
+        <div class="menu">
+            <h2>Enviar Mensajes XML</h2>
+            <ul>
+                <li><a href="{% url 'enviar_configuracion' %}">Enviar Mensaje de Configuración</a></li>
+                <li><a href="{% url 'enviar_consumo' %}">Enviar Mensaje de Consumo</a></li>
+            </ul>
+
+            <div class="operaciones">
+                <h2>Operaciones del Sistema</h2>
+                <ul>
+                    <li>
+                        <form action="{% url 'inicializar_sistema' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit">Inicializar Sistema</button>
+                        </form>
+                    </li>
+                    <li><a href="{% url 'consultar_datos' %}">Consultar Datos del Sistema</a></li>
+                    <li><a href="{% url 'crear_datos' %}">Creación de Nuevos Datos</a></li>
+                    <li><a href="{% url 'proceso_facturacion' %}"> Proceso de Facturación</a></li>
+                    <li><a href="{% url 'reportes_pdf' %}">Reportes en PDF</a></li>
+                    <li><a href="{% url 'ayuda' %}">Ayuda e Información</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <footer style="margin-top: 40px; text-align: center; color: #666;">
+        </footer>
+    </div>
+
+    <script>
+        //Formularios con AJAX
+        document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    if (this.action.includes('inicializar-sistema')) {
+                        e.preventDefault();
+                        if (confirm('Esta seguro de inicializar el sistema? Se perderán todos los datos')) {
+                            fetch(this.action, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                alert(data.mensaje || 'Sistema inicializado correctamente');
+                            })
+                            .catch(error => {
+                                alert('Error: ' + error);
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
