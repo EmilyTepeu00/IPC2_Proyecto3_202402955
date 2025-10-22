@@ -77,24 +77,27 @@ def inicializar_sistema(request):
 #VISTA PARA CONSULTAR DATOS DEL SISTEMA
 def consultar_datos(request):
     try:
-        #Obtener estado del sistema dese el backend
-        response = requests.get(f"{BACKEND_URL}/api/estado")
-        datos_sistema = response.json() if response.status_code == 200 else {}
+        #Obtener todos los datos del backend
+        response = requests.get(f"{BACKEND_URL}/api/consultar/todo")
 
-        #falta la lectura de archivossssssssssssssss
-        datos = {
-            'estado_sistema': datos_sistema,
-            'categorias': [],
-            'recursos': [],
-            'clientes': [],
-            'instancias': []
-        }
-
-        return render(request, 'app/consultar_datos.html', {'datos': datos})
-    
+        if response.status_code == 200:
+            datos = response.json()['datos']
+        else:
+            datos = {
+                'recursos': [],
+                'categorias': [],
+                'clientes': [],
+                'configuraciones': [],
+                'instancias': [],
+                'consumos': []
+            }
+        
+        return render(request, 'consultar_datos.html', {'datos': datos})
+        
     except Exception as e:
-        return render(request, 'app/consultar_datos.html', {
-            'error': f"No se pudo conectar al backend: {str(e)}"
+        return render(request, 'consultar_datos.html', {
+            'error': f"No se pudo conectar al backend: {str(e)}",
+            'datos': {}
         })
 
 #VISTA PARA CREACION DE NUEVOS DATOS

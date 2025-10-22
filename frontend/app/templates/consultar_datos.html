@@ -6,15 +6,20 @@
     <title>Consultar Datos</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
         .section { margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px; }
         .section h2 { color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px; }
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .data-card { background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #007acc; }
+        .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .data-card { background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #007acc; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .data-card h3 { margin-top: 0; color: #007acc; }
-        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; font-weight: bold; }
         .error { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; }
-        .loading { text-align: center; padding: 20px; color: #666; }
+        .empty-state { text-align: center; padding: 40px; color: #6c757d; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .consumo-item { background: #e9ecef; padding: 8px; margin: 5px 0; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -27,77 +32,120 @@
                 <strong>Error:</strong> {{ error }}
             </div>
         {% else %}
+            <!-- RECURSOS -->
             <div class="section">
-                <h2>Estado del Sistema</h2>
-                <div id="estado-sistema">
-                    <div class="loading">Cargando estado del sistema...</div>
+                <h2>Recursos Disponibles ({{ datos.recursos|length }})</h2>
+                {% if datos.recursos %}
+                <div class="data-grid">
+                    {% for recurso in datos.recursos %}
+                    <div class="data-card">
+                        <h3>{{ recurso.nombre }} ({{ recurso.abreviatura }})</h3>
+                        <p><strong>Tipo:</strong> 
+                            <span class="badge {% if recurso.tipo == 'Hardware' %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ recurso.tipo }}
+                            </span>
+                        </p>
+                        <p><strong>Metrica:</strong> {{ recurso.metrica }}</p>
+                        <p><strong>Valor por hora:</strong> {{ recurso.valorXhora }}</p>
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay recursos registrados en el sistema</p>
+                </div>
+                {% endif %}
             </div>
 
+            <!-- CATEGORIAS Y CONFIGURACIONES -->
             <div class="section">
-                <h2>Recursos Disponibles</h2>
-                <div id="recursos-data">
-                    <div class="loading">Cargando recursos...</div>
+                <h2>Categorias y Configuraciones ({{ datos.categorias|length }})</h2>
+                {% if datos.categorias %}
+                <div class="data-grid">
+                    {% for categoria in datos.categorias %}
+                    <div class="data-card">
+                        <h3>{{ categoria.nombre }}</h3>
+                        <p><strong>Descripcion:</strong> {{ categoria.descripcion }}</p>
+                        <p><strong>Carga de trabajo:</strong> {{ categoria.cargaTrabajo }}</p>
+                        {% if categoria.configuraciones %}
+                        <p><strong>Configuraciones:</strong> {{ categoria.configuraciones|length }}</p>
+                        <div style="margin-top: 10px;">
+                            {% for config in categoria.configuraciones %}
+                            <div style="background: #f8f9fa; padding: 5px; margin: 2px 0; border-radius: 3px; font-size: 14px;">
+                                • {{ config.nombre }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay categorias registradas en el sistema</p>
+                </div>
+                {% endif %}
             </div>
 
+            <!-- CLIENTES E INSTANCIAS -->
             <div class="section">
-                <h2>Categorías y Configuraciones</h2>
-                <div id="categorias-data">
-                    <div class="loading">Cargando categorias...</div>
+                <h2>👥 Clientes e Instancias ({{ datos.clientes|length }})</h2>
+                {% if datos.clientes %}
+                <div class="data-grid">
+                    {% for cliente in datos.clientes %}
+                    <div class="data-card">
+                        <h3>{{ cliente.nombre }}</h3>
+                        <p><strong>NIT:</strong> {{ cliente.nit }}</p>
+                        <p><strong>Usuario:</strong> {{ cliente.usuario }}</p>
+                        <p><strong>Email:</strong> {{ cliente.correoElectronico }}</p>
+                        {% if cliente.instancias %}
+                        <p><strong>Instancias:</strong> {{ cliente.instancias|length }}</p>
+                        <div style="margin-top: 10px;">
+                            {% for instancia in cliente.instancias %}
+                            <div class="consumo-item">
+                                <strong>{{ instancia.nombre }}</strong><br>
+                                Estado: 
+                                <span class="badge {% if instancia.estado == 'Vigente' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ instancia.estado }}
+                                </span><br>
+                                Inicio: {{ instancia.fechaInicio }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay clientes registrados en el sistema</p>
+                </div>
+                {% endif %}
             </div>
 
+            <!-- CONSUMOS -->
             <div class="section">
-                <h2>Clientes e Instancias</h2>
-                <div id="clientes-data">
-                    <div class="loading">Cargando clientes...</div>
+                <h2>Consumos Registrados ({{ datos.consumos|length }})</h2>
+                {% if datos.consumos %}
+                <div class="data-grid">
+                    {% for consumo in datos.consumos %}
+                    <div class="data-card">
+                        <h3>Instancia {{ consumo.idInstancia }}</h3>
+                        <p><strong>Cliente NIT:</strong> {{ consumo.nitCliente }}</p>
+                        <p><strong>Tiempo consumido:</strong> {{ consumo.tiempo }} horas</p>
+                        <p><strong>Fecha y hora:</strong> {{ consumo.fechahora }}</p>
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay consumos registrados en el sistema</p>
+                </div>
+                {% endif %}
             </div>
         {% endif %}
 
         <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
     </div>
-
-    <script>
-        //Cargar datos del sistema via AJAX
-        document.addEventListener('DOMContentLoaded', function() {
-            //Simulacion de la carga de datos
-            setTimeout(() => {
-                document.getElementById('estado-sistema').innerHTML = `
-                    <div class="data-card">
-                        <h3>Estado General</h3>
-                        <p><strong>Backend:</strong> <span style="color: green;">● Conectado</span></p>
-                        <p><strong>Archivos XML:</strong> Cargados correctamente</p>
-                        <p><strong>Ultima actualización:</strong> ${new Date().toLocaleString()}</p>
-                    </div>
-                `;
-
-                document.getElementById('recursos-data').innerHTML = `
-                    <div class="data-card">
-                        <h3>Recursos del Sistema</h3>
-                        <p>faltaaaaaaaaaaaaaa</p>
-                        <p>cpu o ram..........</p>
-                    </div>
-                `;
-
-                document.getElementById('categorias-data').innerHTML = `
-                    <div class="data-card">
-                        <h3>Categorías</h3>
-                        <p>faltaaaaaaaaaaaaaaaaa</p>
-                        <p>categorias y configuracionessss</p>
-                    </div>
-                `;
-
-                document.getElementById('clientes-data').innerHTML = `
-                    <div class="data-card">
-                        <h3>Clientes</h3>
-                        <p>faltaaaaaaaa</p>
-                        <p>clientes y sus instanciasssssss</p>
-                    </div>
-                `;
-            }, 1000);
-        });
-    </script>
 </body>
 </html>

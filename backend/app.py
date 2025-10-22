@@ -43,8 +43,10 @@ def elemento_existe(archivo, atributo, valor):
         return root.find(f".//*[@{atributo}='{valor}']") is not None
     except:
         return False
-    
-#AGREGAR UN RECURSO AL XML
+
+#---- FUNCIONES DE GUARDADO EN EL ARCHIVO XML ----
+
+#AGREGAR UN RECURSO
 def agregar_recurso(recurso_data):
     try:
         tree = ET.parse(ARCHIVO_RECURSOS)
@@ -71,8 +73,8 @@ def agregar_recurso(recurso_data):
     except Exception as e:
         print(f"Error guardando recurso: {e}")
         return False
-    
-#AGREGAR UNA CATEGORIA AL XML
+
+#AGREGAR UNA CATEGORIA
 def agregar_categoria(categoria_data):
     try:
         tree = ET.parse(ARCHIVO_CATEGORIAS)
@@ -99,7 +101,7 @@ def agregar_categoria(categoria_data):
         print(f"Error guardando categoria: {e}")
         return False
     
-#AGREGAR UN CLIENTE AL XML
+#AGREGAR UN CLIENTE
 def agregar_cliente(cliente_data):
     try:
         tree = ET.parse(ARCHIVO_CLIENTES)
@@ -130,7 +132,7 @@ def agregar_cliente(cliente_data):
         print(f"Error guardando cliente: {e}")
         return False
  
-#AGREGAR UNA CONFIGURACION AL XML
+#AGREGAR UNA CONFIGURACION
 def agregar_configuracion(config_data):
     try:
         tree = ET.parse(ARCHIVO_CONFIGURACIONES)
@@ -161,7 +163,7 @@ def agregar_configuracion(config_data):
         print(f"Error guardando configuracion: {e}")
         return False
     
-#AGREGAR UNA INSTANCIA AL XML
+#AGREGAR UNA INSTANCIA
 def agregar_instancia(instancia_data):
     try:
         tree = ET.parse(ARCHIVO_INSTANCIAS)
@@ -190,7 +192,7 @@ def agregar_instancia(instancia_data):
         print(f"Error guardando instancia: {e}")
         return False
     
-#AGREGAR UN CONSUMO AL XML
+#AGREGAR UN CONSUMO
 def agregar_consumo(consumo_data):
     try:
         tree = ET.parse(ARCHIVO_CONSUMOS)
@@ -210,6 +212,169 @@ def agregar_consumo(consumo_data):
     except Exception as e:
         print(f"Error guardando consumo: {e}")
         return False
+
+#---- FUNCIONES PARA LEER EL ARCHIVO XML ----
+
+#LEER TODOS LOS RECURSOS
+def leer_recursos():
+    try:
+        tree = ET.parse(ARCHIVO_RECURSOS)
+        root = tree.getroot()
+        recursos = []
+        for recurso_elem in root.findall('recurso'):
+            recursos.append({
+                'id': recurso_elem.get('id'),
+                'nombre': recurso_elem.find('nombre').text,
+                'abreviatura': recurso_elem.find('abreviatura').text,
+                'metrica': recurso_elem.find('metrica').text,
+                'tipo': recurso_elem.find('tipo').text,
+                'valorXhora': float(recurso_elem.find('valorXhora').text)
+            })
+        return recursos
+    except:
+        return []
+    
+#LEER TODAS LAS CATEGORIAS
+def leer_categorias():
+    try:
+        tree = ET.parse(ARCHIVO_CATEGORIAS)
+        root = tree.getroot()
+        categorias = []
+        for categoria_elem in root.findall('categoria'):
+            categoria = {
+                'id': categoria_elem.get('id'),
+                'nombre': categoria_elem.find('nombre').text,
+                'descripcion': categoria_elem.find('description').text,
+                'cargaTrabajo': categoria_elem.find('cargaTrabajo').text,
+                'configuraciones': []
+            }
+            
+            #Leer configuraciones de esta categoria
+            lista_configs = categoria_elem.find('listaConfiguraciones')
+            if lista_configs is not None:
+                for config_elem in lista_configs.findall('configuracion'):
+                    config = {
+                        'id': config_elem.get('id'),
+                        'nombre': config_elem.find('nombre').text,
+                        'descripcion': config_elem.find('description').text
+                    }
+                    categoria['configuraciones'].append(config)
+            
+            categorias.append(categoria)
+        return categorias
+    except:
+        return []
+
+#LEER TODOS LOS CLIENTES
+def leer_clientes():
+    try:
+        tree = ET.parse(ARCHIVO_CLIENTES)
+        root = tree.getroot()
+        clientes = []
+        for cliente_elem in root.findall('cliente'):
+            cliente = {
+                'nit': cliente_elem.get('nit'),
+                'nombre': cliente_elem.find('nombre').text,
+                'usuario': cliente_elem.find('usuario').text,
+                'direccion': cliente_elem.find('direccion').text,
+                'correoElectronico': cliente_elem.find('correoElectronico').text,
+                'instancias': []
+            }
+            
+            #Leer instancias de este cliente
+            lista_instancias = cliente_elem.find('listaInstancias')
+            if lista_instancias is not None:
+                for instancia_elem in lista_instancias.findall('instancia'):
+                    instancia = {
+                        'id': instancia_elem.get('id'),
+                        'idConfiguracion': instancia_elem.find('idConfiguracion').text,
+                        'nombre': instancia_elem.find('nombre').text,
+                        'fechaInicio': instancia_elem.find('fechaInicio').text,
+                        'estado': instancia_elem.find('estado').text
+                    }
+                    
+                    #Leer fecha final si es que hay
+                    fecha_final_elem = instancia_elem.find('fechaFinal')
+                    if fecha_final_elem is not None:
+                        instancia['fechaFinal'] = fecha_final_elem.text
+                    
+                    cliente['instancias'].append(instancia)
+            
+            clientes.append(cliente)
+        return clientes
+    except:
+        return []
+    
+#LEER TODAS LAS CONFIGURACIONES
+def leer_configuraciones():
+    try:
+        tree = ET.parse(ARCHIVO_CONFIGURACIONES)
+        root = tree.getroot()
+        configuraciones = []
+        for config_elem in root.findall('configuracion'):
+            config = {
+                'id': config_elem.get('id'),
+                'idCategoria': config_elem.get('idCategoria'),
+                'nombre': config_elem.find('nombre').text,
+                'descripcion': config_elem.find('description').text,
+                'recursos': {}
+            }
+            
+            #Leer recursos de la configuracion
+            recursos_config = config_elem.find('recursosConfiguracion')
+            if recursos_config is not None:
+                for recurso_config in recursos_config.findall('recurso'):
+                    recurso_id = recurso_config.get('id')
+                    cantidad = float(recurso_config.text)
+                    config['recursos'][recurso_id] = cantidad
+            
+            configuraciones.append(config)
+        return configuraciones
+    except:
+        return []
+
+#LEER TODAS LAS INSTANCIAS
+def leer_instancias():
+    try:
+        tree = ET.parse(ARCHIVO_INSTANCIAS)
+        root = tree.getroot()
+        instancias = []
+        for instancia_elem in root.findall('instancia'):
+            instancia = {
+                'id': instancia_elem.get('id'),
+                'nitCliente': instancia_elem.get('nitCliente'),
+                'idConfiguracion': instancia_elem.find('idConfiguracion').text,
+                'nombre': instancia_elem.find('nombre').text,
+                'fechaInicio': instancia_elem.find('fechaInicio').text,
+                'estado': instancia_elem.find('estado').text
+            }
+            
+            fecha_final_elem = instancia_elem.find('fechaFinal')
+            if fecha_final_elem is not None:
+                instancia['fechaFinal'] = fecha_final_elem.text
+            
+            instancias.append(instancia)
+        return instancias
+    except:
+        return []
+    
+#LEER TODOS LOS CONSUMOS
+def leer_consumos():
+    try:
+        tree = ET.parse(ARCHIVO_CONSUMOS)
+        root = tree.getroot()
+        consumos = []
+        for consumo_elem in root.findall('consumo'):
+            consumo = {
+                'nitCliente': consumo_elem.get('nitCliente'),
+                'idInstancia': consumo_elem.get('idInstancia'),
+                'tiempo': float(consumo_elem.find('tiempo').text),
+                'fechahora': consumo_elem.find('fechahora').text
+            }
+            consumos.append(consumo)
+        return consumos
+    except:
+        return []
 
 #CLASE PARA VALIDACIONES CON EXPRESIONES REGULARES
 class Validador:
@@ -460,7 +625,98 @@ def resetear_datos():
         return jsonify({"estado": "exito", "mensaje": "Sistema inicializado"})
     except Exception as e:
         return jsonify({"estado": "error", "mensaje": f"Error: {str(e)}"}), 400
+
+#---- ENDPOINTS PARA CONSULTAS ----
+
+#ENDPOINT PARA CONSULTAR RECURSOS
+@app.route('/api/consultar/recursos', methods=['GET'])
+def api_consultar_recursos():
+    try:
+        recursos = leer_recursos()
+        return jsonify({
+            "estado": "exito",
+            "recursos": recursos
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
     
+#ENDPOINT PARA CONSULTAR CATEGORIAS
+@app.route('/api/consultar/categorias', methods=['GET'])
+def api_consultar_categorias():
+    try:
+        categorias = leer_categorias()
+        return jsonify({
+            "estado": "exito", 
+            "categorias": categorias
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+#ENDPOINT PARA CONSULTAR CLIENTES
+@app.route('/api/consultar/clientes', methods=['GET'])
+def api_consultar_clientes():
+    try:
+        clientes = leer_clientes()
+        return jsonify({
+            "estado": "exito",
+            "clientes": clientes
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+#ENDPOINT PARA CONSULTAR CONFIGURACIONES
+@app.route('/api/consultar/configuraciones', methods=['GET'])
+def api_consultar_configuraciones():
+    try:
+        configuraciones = leer_configuraciones()
+        return jsonify({
+            "estado": "exito",
+            "configuraciones": configuraciones
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+#ENDPOINT PARA CONSULTAR INSTANCIAS
+@app.route('/api/consultar/instancias', methods=['GET'])
+def api_consultar_instancias():
+    try:
+        instancias = leer_instancias()
+        return jsonify({
+            "estado": "exito",
+            "instancias": instancias
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+#ENDPOINT PARA CONSULTAR CONSUMOS
+@app.route('/api/consultar/consumos', methods=['GET'])
+def api_consultar_consumos():
+    try:
+        consumos = leer_consumos()
+        return jsonify({
+            "estado": "exito",
+            "consumos": consumos
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+#ENDPOINT PARA CONSULTAR TODOS LOS DATOS
+@app.route('/api/consultar/todo', methods=['GET'])
+def api_consultar_todo():
+    try:
+        return jsonify({
+            "estado": "exito",
+            "datos": {
+                "recursos": leer_recursos(),
+                "categorias": leer_categorias(),
+                "clientes": leer_clientes(),
+                "configuraciones": leer_configuraciones(),
+                "instancias": leer_instancias(),
+                "consumos": leer_consumos()
+            }
+        })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
 
 #Ejecutar la aplicacion Flask
 if __name__ == '__main__':
