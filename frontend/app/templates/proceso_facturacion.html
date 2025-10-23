@@ -55,49 +55,83 @@
             <div id="facturas-generadas"></div>
         </div>
 
-        <a href="{% url 'index' %}" class="back-link">← Volver al Inicio</a>
+        <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
     </div>
 
     <script>
         document.getElementById('facturacionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const btnGenerar = document.getElementById('btnGenerar');
-            const resultadoDiv = document.getElementById('resultado');
-            const facturasDiv = document.getElementById('facturas-generadas');
+        const btnGenerar = document.getElementById('btnGenerar');
+        const resultadoDiv = document.getElementById('resultado');
+        const facturasDiv = document.getElementById('facturas-generadas');
             
-            btnGenerar.disabled = true;
-            btnGenerar.textContent = 'Generando...';
-            
-            resultadoDiv.style.display = 'block';
-            resultadoDiv.className = 'resultado';
-            facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
-            
-            //Simular proceso de facturacion
-            setTimeout(() => {
+        btnGenerar.disabled = true;
+        btnGenerar.textContent = 'Generando...';
+    
+        resultadoDiv.style.display = 'block';
+        resultadoDiv.className = 'resultado';
+        facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
+
+        const formData = new FormData(this);
+        const data = {
+            'fecha_inicio': formData.get('fecha_inicio'),
+            'fecha_fin': formData.get('fecha_fin')
+        };
+
+        fetch(this.action, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.estado === 'exito' || data.estado === 'exito') {
                 resultadoDiv.className = 'resultado exito';
-                facturasDiv.innerHTML = `
-                    <div class="factura-info">
-                        <h4>Facturas Generadas</h4>
-                        <p><strong>Número de Factura:</strong> FAC-001</p>
-                        <p><strong>Cliente:</strong> IPC (NIT: 32644-5)</p>
-                        <p><strong>Fecha de Factura:</strong> ${document.getElementById('fecha_fin').value}</p>
-                        <p><strong>Monto a Pagar:</strong> Q 1,250.00</p>
-                        <p><strong>Instancias facturadas:</strong> 2</p>
-                    </div>
-                    <div class="factura-info">
-                        <h4>Resumen del Proceso</h4>
-                        <p>• Facturas generadas: 1</p>
-                        <p>• Clientes procesados: 1</p>
-                        <p>• Consumos facturados: 5</p>
-                        <p>• Monto total: Q 1,250.00</p>
-                    </div>
-                `;
-                
-                btnGenerar.disabled = false;
-                btnGenerar.textContent = 'Generar Facturas';
-            }, 2000);
+
+                let html = `<h3>${data.mensaje}</h3>`;
+                html += `<p><strong>Total facturado:</strong> Q ${data.total_facturado || 0}</p>`;
+            
+                if (data.facturas && data.facturas.length > 0) {
+                    data.facturas.forEach(factura => {
+                        html += `
+                            <div class="factura-info">
+                                <h4>Factura ${factura.numero_factura}</h4>
+                                <p><strong>Cliente:</strong> ${factura.nombre_cliente} (${factura.nit_cliente})</p>
+                                <p><strong>Fecha:</strong> ${factura.fecha_factura}</p>
+                                <p><strong>Monto:</strong> Q ${factura.monto_total}</p>
+                                <p><strong>Instancias facturadas:</strong> ${factura.detalle.length}</p>
+                                <button onclick="verDetalleFactura('${factura.numero_factura}')" style="margin-top: 10px; padding: 5px 10px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                    Ver Detalle
+                                </button>
+                            </div>
+                        `;
+                    });
+                }
+
+                facturasDiv.innerHTML = html;
+            } else {
+                resultadoDiv.className = 'resultado error';
+                facturasDiv.innerHTML = `<strong>Error:</strong> ${data.mensaje}`;
+            }
+
+            btnGenerar.disabled = false;
+            btnGenerar.textContent = 'Generar Facturas';
+        })
+        .catch(error => {
+            resultadoDiv.className = 'resultado error';
+            facturasDiv.innerHTML = `<strong>Error:</strong> ${error}`;
+            btnGenerar.disabled = false;
+            btnGenerar.textContent = 'Generar Facturas';
         });
+    });
+
+    function verDetalleFactura(numeroFactura) {
+        alert(`Detalle de factura ${numeroFactura}\n\nfaltaaaaaaaaaaa`);
+    }
     </script>
 </body>
 </html>

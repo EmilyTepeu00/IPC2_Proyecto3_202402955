@@ -106,7 +106,34 @@ def crear_datos(request):
 
 #VISTA PARA PROCESO DE FACTURACION
 def proceso_facturacion(request):
-    return render(request, 'app/proceso_facturacion.html')
+    if request.method == 'POST':
+        try:
+            data = {
+                'fecha_inicio': request.POST.get('fecha_inicio'),
+                'fecha_fin': request.POST.get('fecha_fin')
+            }
+            
+            response = requests.post(
+                f"{BACKEND_URL}/api/facturacion/generar",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al generar facturas: {str(e)}"
+            })
+    
+    #GET: Mostrar formulario
+    return render(request, 'proceso_facturacion.html')
 
 #VISTA PARA GENERACION DE REPORTES
 def reportes_pdf(request):

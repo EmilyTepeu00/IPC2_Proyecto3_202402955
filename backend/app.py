@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import xml.etree.ElementTree as ET
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 #CREAR LA APLICACION Flask
 app = Flask(__name__)
@@ -175,19 +175,35 @@ def agregar_instancia(instancia_data):
         instancia_elem = ET.Element('instancia')
         instancia_elem.set('id', instancia_data['id'])
         instancia_elem.set('nitCliente', instancia_data['nitCliente'])
-
+        
         ET.SubElement(instancia_elem, 'idConfiguracion').text = instancia_data['idConfiguracion']
         ET.SubElement(instancia_elem, 'nombre').text = instancia_data['nombre']
         ET.SubElement(instancia_elem, 'fechaInicio').text = instancia_data['fechaInicio']
         ET.SubElement(instancia_elem, 'estado').text = instancia_data['estado']
-
+        
         if instancia_data.get('fechaFinal'):
             ET.SubElement(instancia_elem, 'fechaFinal').text = instancia_data['fechaFinal']
         
         root.append(instancia_elem)
         tree.write(ARCHIVO_INSTANCIAS, encoding='utf-8', xml_declaration=True)
+        
+        #Guardar precios originales de los recursos de la configuracion
+        configuraciones = leer_configuraciones()
+        configuracion = next((c for c in configuraciones if c['id'] == instancia_data['idConfiguracion']), None)
+        
+        if configuracion:
+            recursos = leer_recursos()
+            precios_originales = {}
+            
+            for recurso_id in configuracion['recursos'].keys():
+                recurso = next((r for r in recursos if r['id'] == recurso_id), None)
+                if recurso:
+                    precios_originales[recurso_id] = recurso['valorXhora']
+            
+            guardar_precios_instancia(instancia_data['id'], precios_originales)
+        
         return True
-
+        
     except Exception as e:
         print(f"Error guardando instancia: {e}")
         return False
@@ -408,6 +424,163 @@ class Validador:
     @staticmethod
     def validar_tipo_recurso(tipo):
         return tipo in ["Hardware", "Software"]
+    
+
+#---- FUNCIONES PARA FACTURACION ----
+
+#GUARDAR PRECIOS ORIGINALES DE LOS RECURSOS AL CREAR INSTANCIAS
+def guardar_precios_instancia(instancia_id, precios):
+    try:
+        #Buscar las instancia en el archivo
+        tree = ET.parse(ARCHIVO_INSTANCIAS)
+        root = tree.getroot()
+        
+        for instancia_elem in root.findall('instancia'):
+            if instancia_elem.get('id') == instancia_id:
+                #Eliminar precios existentes si hay
+                precios_existentes = instancia_elem.find('preciosOriginales')
+                if precios_existentes is not None:
+                    instancia_elem.remove(precios_existentes)
+
+                #Crear elemento de precios originales
+                precios_elem = ET.SubElement(instancia_elem, 'preciosOriginales')
+                for recurso_id, precio in precios.items():
+                    recurso_precio = ET.SubElement(precios_elem, 'recurso')
+                    recurso_precio.set('id', recurso_id)
+                    recurso_precio.set('precio', str(precio))
+                
+                tree.write(ARCHIVO_INSTANCIAS, encoding='utf-8', xml_declaration=True)
+                return True
+            
+        return False
+    except Exception as e:
+        print(f"Error guardando precios de instancia: {e}")
+        return False
+    
+#OBTENER LOS PRECIOS ORIGINALES D EUNA INSTANCIA
+def obtener_precios_instancia(instancia_id):
+    try:
+        tree = ET.parse(ARCHIVO_INSTANCIAS)
+        root = tree.getroot()
+        
+        for instancia_elem in root.findall('instancia'):
+            if instancia_elem.get('id') == instancia_id:
+                precios_elem = instancia_elem.find('preciosOriginales')
+                if precios_elem is not None:
+                    precios = {}
+                    for recurso_precio in precios_elem.findall('recurso'):
+                        precios[recurso_precio.get('id')] = float(recurso_precio.get('precio'))
+                    return precios
+        return None
+    except:
+        return None
+    
+#CALCULAR COSTO TOTAL DE UNA INSTANCIA
+def calcular_costo_instancia(instancia_id, consumos):
+    try:
+        #Obtener precios originales de la instancia
+        precios_originales = obtener_precios_instancia(instancia_id)
+        
+        if not precios_originales:
+            return 0.0
+        
+        #Obtener CONFIGURACION de la instancia para saber que recursos usa
+        instancias = leer_instancias()
+        configuraciones = leer_configuraciones()
+        
+        instancia_info = next((i for i in instancias if i['id'] == instancia_id), None)
+        if not instancia_info:
+            return 0.0
+        
+        configuracion = next((c for c in configuraciones if c['id'] == instancia_info['idConfiguracion']), None)
+        if not configuracion:
+            return 0.0
+        
+        #Calcular costo total
+        costo_total = 0.0
+        
+        for consumo in consumos:
+            if consumo['idInstancia'] == instancia_id:
+                #Para cada recurso en la configuracion se calcula el costo
+                for recurso_id, cantidad in configuracion['recursos'].items():
+                    if recurso_id in precios_originales:
+                        precio_recurso = precios_originales[recurso_id]
+                        costo_recurso = precio_recurso * cantidad * consumo['tiempo']
+                        costo_total += costo_recurso
+        
+        return round(costo_total, 2)
+    except Exception as e:
+        print(f"Error calculando costo: {e}")
+        return 0.0
+    
+#GENERAR FACTURA EN RANGO DE FECHAS
+def generar_factura(nit_cliente, fecha_inicio, fecha_fin):
+    try:
+        #Obtener consumos del cliente en el rango de fechas
+        consumos = leer_consumos()
+        instancias = leer_instancias()
+        clientes = leer_clientes()
+        
+        #Filtrar consumos por cliente y fecha
+        consumos_cliente = []
+        for consumo in consumos:
+            if consumo['nitCliente'] == nit_cliente:
+                #Extraer fecha del consumo
+                fecha_consumo = Validador.extraer_fecha(consumo['fechahora'])
+                if fecha_consumo:
+                    fecha_consumo_dt = datetime.strptime(fecha_consumo, '%d/%m/%Y')
+                    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+                    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d')
+                    
+                    if fecha_inicio_dt <= fecha_consumo_dt <= fecha_fin_dt:
+                        consumos_cliente.append(consumo)
+        
+        #Agrupar consumos por instancia
+        consumos_por_instancia = {}
+        for consumo in consumos_cliente:
+            instancia_id = consumo['idInstancia']
+            if instancia_id not in consumos_por_instancia:
+                consumos_por_instancia[instancia_id] = []
+            consumos_por_instancia[instancia_id].append(consumo)
+        
+        #Calcular costos por instancia
+        factura_detalle = []
+        total_factura = 0.0
+        
+        for instancia_id, consumos_instancia in consumos_por_instancia.items():
+            costo_instancia = calcular_costo_instancia(instancia_id, consumos_instancia)
+            total_factura += costo_instancia
+            
+            #Obtener info de la instancia
+            instancia_info = next((i for i in instancias if i['id'] == instancia_id), None)
+            if instancia_info:
+                factura_detalle.append({
+                    'instancia_id': instancia_id,
+                    'instancia_nombre': instancia_info['nombre'],
+                    'consumos': consumos_instancia,
+                    'costo': costo_instancia
+                })
+        
+        #Generar numero de factura unico
+        numero_factura = f"FAC-{datetime.now().strftime('%Y%m%d')}-{nit_cliente}"
+        
+        cliente_info = next((c for c in clientes if c['nit'] == nit_cliente), None)
+        
+        return {
+            'numero_factura': numero_factura,
+            'nit_cliente': nit_cliente,
+            'nombre_cliente': cliente_info['nombre'] if cliente_info else 'Cliente',
+            'fecha_factura': fecha_fin,
+            'fecha_inicio': fecha_inicio,
+            'fecha_fin': fecha_fin,
+            'detalle': factura_detalle,
+            'monto_total': round(total_factura, 2),
+            'estado': 'generada'
+        }
+    
+    except Exception as e:
+        print(f"Error generando factura: {e}")
+        return None
 
 
 #RUTA PARA RECIBIR MENSAJES DE CONFIGURACION
@@ -614,19 +787,19 @@ def recibir_consumo():
 def hola_mundo():
     return jsonify({"mensaje": "API funcionando", "estado": "OK"})
 
-#RUTA PARA RESETEAR DATOS
+#RENDPOINT PARA ELIMINAR TODOS LOS DATOS (inicializar sistema)
 @app.route('/api/reset', methods=['POST'])
 def resetear_datos():
-    """
-    Endpoint para eliminar todos los datos (inicializar sistema)
-    """
     try:
         inicializar_archivos_xml()
         return jsonify({"estado": "exito", "mensaje": "Sistema inicializado"})
     except Exception as e:
         return jsonify({"estado": "error", "mensaje": f"Error: {str(e)}"}), 400
 
-#---- ENDPOINTS PARA CONSULTAS ----
+
+# =============================================
+#           ENDPOINTS PARA CONSULTAS
+# =============================================
 
 #ENDPOINT PARA CONSULTAR RECURSOS
 @app.route('/api/consultar/recursos', methods=['GET'])
@@ -715,6 +888,66 @@ def api_consultar_todo():
                 "consumos": leer_consumos()
             }
         })
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+    
+
+# =============================================
+#          ENDPOINTS PARA FACTURACION
+# =============================================
+
+#ENDPOINT PARA GENERAR FACTURAS EN RANGO DE FECHAS
+@app.route('/api/facturacion/generar', methods=['POST'])
+def api_generar_facturas():
+    try:
+        data = request.get_json()
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_fin = data.get('fecha_fin')
+        
+        if not fecha_inicio or not fecha_fin:
+            return jsonify({"estado": "error", "mensaje": "Debe ingresar las fechas de inicio y fin"}), 400
+        
+        #Obtener todos los clientes
+        clientes = leer_clientes()
+        facturas_generadas = []
+        
+        for cliente in clientes:
+            factura = generar_factura(cliente['nit'], fecha_inicio, fecha_fin)
+            if factura and factura['monto_total'] > 0:
+                facturas_generadas.append(factura)
+        
+        return jsonify({
+            "estado": "exito",
+            "mensaje": f"Generadas {len(facturas_generadas)} facturas",
+            "facturas": facturas_generadas,
+            "total_facturado": sum(f['monto_total'] for f in facturas_generadas)
+        })
+        
+    except Exception as e:
+        return jsonify({"estado": "error", "mensaje": str(e)}), 400
+
+#ENDPOINT PARA OBTENER FACTURAS EN ESPECIFICO
+@app.route('/api/facturacion/cliente/<nit>', methods=['GET'])
+def api_facturas_cliente(nit):
+    try:
+        #Generar factura del ultimo mes
+        fecha_fin = datetime.now().strftime('%Y-%m-%d')
+        fecha_inicio = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        factura = generar_factura(nit, fecha_inicio, fecha_fin)
+        
+        if factura:
+            return jsonify({
+                "estado": "exito",
+                "factura": factura
+            })
+        else:
+            return jsonify({
+                "estado": "exito",
+                "mensaje": "No se encontraron consumos para facturar",
+                "factura": None
+            })
+            
     except Exception as e:
         return jsonify({"estado": "error", "mensaje": str(e)}), 400
 
