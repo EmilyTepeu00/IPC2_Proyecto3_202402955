@@ -33,30 +33,44 @@ def inicializar_archivos_xml():
         if not os.path.exists(archivo):
             root = ET.Element(tag_raiz)
             tree = ET.ElementTree(root)
-            tree.write(archivo, encoding='utf-8', xml_declaration=True)
+            with open(archivo, 'w', encoding='utf-8') as f:
+                tree.write(f, encoding='unicode', xml_declaration=True)
+            print(f"Archivo creado: {archivo}")
 
 #VERIFICAR SI UN ELEMENTO YA EXISTE EN EL XML
 def elemento_existe(archivo, atributo, valor):
     try:
         tree = ET.parse(archivo)
         root = tree.getroot()
-        return root.find(f".//*[@{atributo}='{valor}']") is not None
+        
+        #Buscar en todos los elementos
+        for elem in root.findall('*'):
+            if elem.get(atributo) == valor:
+                return True
+        return False
     except:
         return False
 
-#---- FUNCIONES DE GUARDADO EN EL ARCHIVO XML ----
+# =============================================
+#       FUNCIONES DE GUARDADO EN EL XML
+# =============================================
 
 #AGREGAR UN RECURSO
 def agregar_recurso(recurso_data):
     try:
+        #Asegurarse de que el archivo existe
+        if not os.path.exists(ARCHIVO_RECURSOS):
+            inicializar_archivos_xml()
+            
         tree = ET.parse(ARCHIVO_RECURSOS)
         root = tree.getroot()
 
         #Verificar si ya existe
         if elemento_existe(ARCHIVO_RECURSOS, 'id', recurso_data['id']):
+            print(f"Recurso con ID {recurso_data['id']} ya existe")
             return False
         
-        #Crear elemento recuros
+        #Crear elemento recurso
         recurso_elem = ET.Element('recurso')
         recurso_elem.set('id', recurso_data['id'])
 
@@ -67,11 +81,17 @@ def agregar_recurso(recurso_data):
         ET.SubElement(recurso_elem, 'valorXhora').text = str(recurso_data['valorXhora'])
 
         root.append(recurso_elem)
-        tree.write(ARCHIVO_RECURSOS, encoding='utf-8', xml_declaration=True)
+        
+        with open(ARCHIVO_RECURSOS, 'w', encoding='utf-8') as f:
+            tree.write(f, encoding='unicode', xml_declaration=True)
+            
+        print(f"Recurso {recurso_data['nombre']} guardado con exito")
         return True
     
     except Exception as e:
         print(f"Error guardando recurso: {e}")
+        import traceback
+        print(f"Traceback guardar recurso: {traceback.format_exc()}")
         return False
 
 #AGREGAR UNA CATEGORIA
@@ -79,24 +99,27 @@ def agregar_categoria(categoria_data):
     try:
         tree = ET.parse(ARCHIVO_CATEGORIAS)
         root = tree.getroot()
-
+        
         if elemento_existe(ARCHIVO_CATEGORIAS, 'id', categoria_data['id']):
             return False
         
         categoria_elem = ET.Element('categoria')
         categoria_elem.set('id', categoria_data['id'])
-
+        
         ET.SubElement(categoria_elem, 'nombre').text = categoria_data['nombre']
-        ET.SubElement(categoria_elem, 'description').text = categoria_data['descripcion']
+        
+        #Buscar 'descripcion' o 'description'
+        descripcion = categoria_data.get('descripcion') or categoria_data.get('description', '')
+        ET.SubElement(categoria_elem, 'description').text = descripcion
+        
         ET.SubElement(categoria_elem, 'cargaTrabajo').text = categoria_data['cargaTrabajo']
-
+        
         #Agregar lista de configuraciones vacia
         lista_config = ET.SubElement(categoria_elem, 'listaConfiguraciones')
         
         root.append(categoria_elem)
         tree.write(ARCHIVO_CATEGORIAS, encoding='utf-8', xml_declaration=True)
         return True
-    
     except Exception as e:
         print(f"Error guardando categoria: {e}")
         return False
@@ -119,9 +142,7 @@ def agregar_cliente(cliente_data):
         ET.SubElement(cliente_elem, 'direccion').text = cliente_data['direccion']
         ET.SubElement(cliente_elem, 'correoElectronico').text = cliente_data['correoElectronico']
 
-        #Agregar lista de instancias vacia
-        lista_instancias = ET.SubElement(cliente_elem, 'listaInstancias')
-
+        #Agregar una lista de instancias vacia
         lista_instancias = ET.SubElement(cliente_elem, 'listaInstancias')
         
         root.append(cliente_elem)
@@ -135,11 +156,18 @@ def agregar_cliente(cliente_data):
 #AGREGAR UNA CONFIGURACION
 def agregar_configuracion(config_data):
     try:
+        #Asegurarse de que el archivo existe
+        if not os.path.exists(ARCHIVO_CONFIGURACIONES):
+            inicializar_archivos_xml()
+            
         tree = ET.parse(ARCHIVO_CONFIGURACIONES)
         root = tree.getroot()
         
-        if elemento_existe(ARCHIVO_CONFIGURACIONES, 'id', config_data['id']):
-            return False
+        #Verificar si ya existe
+        for config_elem in root.findall('configuracion'):
+            if config_elem.get('id') == config_data['id']:
+                print(f"Configuracion con ID {config_data['id']} ya existe")
+                return False
         
         config_elem = ET.Element('configuracion')
         config_elem.set('id', config_data['id'])
@@ -156,11 +184,15 @@ def agregar_configuracion(config_data):
             recurso_elem.text = str(cantidad)
 
         root.append(config_elem)
-        tree.write(ARCHIVO_CONFIGURACIONES, encoding='utf-8', xml_declaration=True)
+        
+        with open(ARCHIVO_CONFIGURACIONES, 'w', encoding='utf-8') as f:
+            tree.write(f, encoding='unicode', xml_declaration=True)
         return True
     
     except Exception as e:
         print(f"Error guardando configuracion: {e}")
+        import traceback
+        print(f"Traceback guardar configuracion: {traceback.format_exc()}")
         return False
     
 #AGREGAR UNA INSTANCIA
@@ -169,8 +201,11 @@ def agregar_instancia(instancia_data):
         tree = ET.parse(ARCHIVO_INSTANCIAS)
         root = tree.getroot()
         
-        if elemento_existe(ARCHIVO_INSTANCIAS, 'id', instancia_data['id']):
-            return False
+        #Verificar si ya existe
+        for instancia_elem in root.findall('instancia'):
+            if instancia_elem.get('id') == instancia_data['id']:
+                print(f"Instancia con ID {instancia_data['id']} ya existe")
+                return False
         
         instancia_elem = ET.Element('instancia')
         instancia_elem.set('id', instancia_data['id'])
@@ -229,7 +264,9 @@ def agregar_consumo(consumo_data):
         print(f"Error guardando consumo: {e}")
         return False
 
-#---- FUNCIONES PARA LEER EL ARCHIVO XML ----
+# =============================================
+#         FUNCIONES PARA LEER EL XML
+# =============================================
 
 #LEER TODOS LOS RECURSOS
 def leer_recursos():
@@ -395,15 +432,19 @@ def leer_consumos():
 #CLASE PARA VALIDACIONES CON EXPRESIONES REGULARES
 class Validador:
     
-    #Validar formato de NIT
+   #Validar formato de NIT
     @staticmethod
     def validar_nit(nit):
+        if not nit:
+            return False
         patron = r'^\d+-[0-9K]$'
         return re.match(patron, nit) is not None
     
     #Extraer fecha de un texto
     @staticmethod
     def extraer_fecha(texto):
+        if not texto:
+            return None
         patron = r'\b(\d{2}/\d{2}/\d{4})\b'
         coincidencias = re.findall(patron, texto)
         return coincidencias[0] if coincidencias else None
@@ -411,6 +452,8 @@ class Validador:
     #Extraer fecha y hora
     @staticmethod
     def extraer_fecha_hora(texto):
+        if not texto:
+            return None
         patron = r'\b(\d{2}/\d{2}/\d{4} \d{2}:\d{2})\b'
         coincidencias = re.findall(patron, texto)
         return coincidencias[0] if coincidencias else None
@@ -418,15 +461,18 @@ class Validador:
     #Validar estado: vigente o cancelado
     @staticmethod
     def validar_estado_instancia(estado):
-        return estado in ["Vigente", "Cancelada"]
+        estado_upper = estado.upper()
+        return estado_upper in ["VIGENTE", "CANCELADA", "ACTIVA", "CANCELADO"]
     
     #Validar tipo de recurso: hardware o software
     @staticmethod
     def validar_tipo_recurso(tipo):
-        return tipo in ["Hardware", "Software"]
+        tipo_upper = tipo.upper()
+        return tipo_upper in ["HARDWARE", "SOFTWARE", "HW", "SW"]
     
-
-#---- FUNCIONES PARA FACTURACION ----
+# =============================================
+#          FUNCIONES PARA FACTURACION
+# =============================================
 
 #GUARDAR PRECIOS ORIGINALES DE LOS RECURSOS AL CREAR INSTANCIAS
 def guardar_precios_instancia(instancia_id, precios):
@@ -457,7 +503,7 @@ def guardar_precios_instancia(instancia_id, precios):
         print(f"Error guardando precios de instancia: {e}")
         return False
     
-#OBTENER LOS PRECIOS ORIGINALES D EUNA INSTANCIA
+#OBTENER LOS PRECIOS ORIGINALES DE UNA INSTANCIA
 def obtener_precios_instancia(instancia_id):
     try:
         tree = ET.parse(ARCHIVO_INSTANCIAS)
@@ -484,7 +530,7 @@ def calcular_costo_instancia(instancia_id, consumos):
         if not precios_originales:
             return 0.0
         
-        #Obtener CONFIGURACION de la instancia para saber que recursos usa
+        #Obtener configuracion de la instancia para saber que recursos usa
         instancias = leer_instancias()
         configuraciones = leer_configuraciones()
         
@@ -501,7 +547,7 @@ def calcular_costo_instancia(instancia_id, consumos):
         
         for consumo in consumos:
             if consumo['idInstancia'] == instancia_id:
-                #Para cada recurso en la configuracion se calcula el costo
+                #Calcular costo para cada recurso
                 for recurso_id, cantidad in configuracion['recursos'].items():
                     if recurso_id in precios_originales:
                         precio_recurso = precios_originales[recurso_id]
@@ -582,18 +628,126 @@ def generar_factura(nit_cliente, fecha_inicio, fecha_fin):
         print(f"Error generando factura: {e}")
         return None
 
+#LIMPIAR XML COMPLETO
+def limpiar_y_validar_xml(xml_data):
+    if not xml_data or not xml_data.strip():
+        return '<?xml version="1.0" encoding="UTF-8"?><archivoConfiguraciones></archivoConfiguraciones>'
+    
+    #Quitar caracteres de control invalidos
+    cleaned = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_data)
+    
+    #Quitar espacios en blanco al inicio y final
+    cleaned = cleaned.strip()
+    
+    #Areglar etiquetas mal formadas
+    #Arreglar el cierre de archivoConfiguraciones si esta mal
+    if cleaned.endswith('</archivoConfiguracione'):
+        cleaned = cleaned[:-23] + '</archivoConfiguraciones>'
+        print("Reparado: cierre de archivoConfiguraciones")
+    
+    #Arreglar otros cierres mal formados
+    malformed_closures = [
+        ('</archivoConfiguracione', '</archivoConfiguraciones>'),
+        ('</listaInstancia', '</listaInstancias>'),
+        ('</listaCategoria', '</listaCategorias>'),
+        ('</listaConfiguracione', '</listaConfiguraciones>'),
+        ('</recursoConfiguracion', '</recursosConfiguracion>')
+    ]
+    
+    for malformed, correct in malformed_closures:
+        if cleaned.endswith(malformed):
+            cleaned = cleaned[:-len(malformed)] + correct
+            print(f"Reparado: {malformed} -> {correct}")
+    
+    #Verificar que empiece correctamente
+    if not cleaned.startswith('<?xml'):
+        #Agregar declaracion XML si falta
+        cleaned = '<?xml version="1.0" encoding="UTF-8"?>' + cleaned
+    
+    #Asegurar que tenga la estructura basica completa
+    if '<archivoConfiguraciones>' in cleaned and '</archivoConfiguraciones>' not in cleaned:
+        #Si falta el cierre principal se agrega
+        if not cleaned.endswith('</archivoConfiguraciones>'):
+            cleaned += '</archivoConfiguraciones>'
+            print("Agregado cierre de archivoConfiguraciones")
+    
+    #Intentar parsear para verificar
+    try:
+        ET.fromstring(cleaned)
+        print("XML valido despues de arreglarlo")
+        return cleaned
+    except ET.ParseError as e:
+        print(f"XML aun no valido despues de arreglarlo: {e}")
+        #Si no se puede parsear, intentar una arreglarlo mas agresiva
+        return reparacion_agresiva_xml(cleaned)
 
-#RUTA PARA RECIBIR MENSAJES DE CONFIGURACION
+#POR SI EL XML ESTA MAL ESCRITO
+def reparacion_agresiva_xml(xml_data):
+    print("Aplicando arreglarlo agresiva...")
+    
+    #Extraer todas las partes validas
+    recursos_match = re.search(r'<listaRecursos>.*?</listaRecursos>', xml_data, re.DOTALL)
+    categorias_match = re.search(r'<listaCategorias>.*?</listaCategorias>', xml_data, re.DOTALL)
+    clientes_match = re.search(r'<listaClientes>.*?</listaClientes>', xml_data, re.DOTALL)
+    
+    #Construir un XML valido con las partes validas
+    xml_reparado = '<?xml version="1.0" encoding="UTF-8"?>\n<archivoConfiguraciones>\n'
+    
+    if recursos_match:
+        xml_reparado += recursos_match.group(0) + '\n'
+        print("Se preservaron recursos")
+    
+    if categorias_match:
+        xml_reparado += categorias_match.group(0) + '\n'
+        print("Se preservaron categorias")
+    
+    if clientes_match:
+        xml_reparado += clientes_match.group(0) + '\n'
+        print("Se preservaron clientes")
+    
+    xml_reparado += '</archivoConfiguraciones>'
+    
+    #Verificar si el XML reparado es valido
+    try:
+        ET.fromstring(xml_reparado)
+        print("arreglo exitoso")
+        return xml_reparado
+    except ET.ParseError:
+        print("arreglo falló, creando estructura minima")
+        return '<?xml version="1.0" encoding="UTF-8"?><archivoConfiguraciones></archivoConfiguraciones>'
+
+#POR SI EL XML TIENE PROBLEMAS
+def inspeccionar_xml(xml_data):
+    #Buscar lo que esta mal
+    lines = xml_data.split('\n')
+    for i, line in enumerate(lines, 1):
+        if len(line.strip()) > 0:
+            print(f"Linea {i}: {line.strip()[:100]}...")
+    
+    #Buscar etiquetas no cerradas
+    open_pattern = r'<(\w+)(?:\s+[^>]*)?>(?![^<]*</\1>)'
+    open_tags = re.findall(open_pattern, xml_data)
+    if open_tags:
+        print(f"Posibles etiquetas no cerradas: {open_tags}")
+    
+    return xml_data
+
+#ENDPOINT PARA RECIBIR MENSJAES DE CONFIGURACION
 @app.route('/api/configuracion', methods=['POST'])
 def recibir_configuracion():
-    """
-    Endpoint para recibir mensajes XML de configuracion
-    """
     try:
         xml_data = request.data.decode('utf-8')
         
+        #Inspeccionar el XML
+        xml_data = inspeccionar_xml(xml_data)
+        
+        #Limpiar y validar el XML
+        xml_data = limpiar_y_validar_xml(xml_data)
+        print("XML limpiado correctamente")
+        
         #Parsear el XML
         root = ET.fromstring(xml_data)
+        print(f"Elemento raiz: {root.tag}")
         
         #Contadores para los resultados
         resultados = {
@@ -605,141 +759,320 @@ def recibir_configuracion():
             'errores': []
         }
         
-        #Procesar  y guardar recursos
+        #Procesar y guardar recursos
         lista_recursos = root.find('listaRecursos')
+        print(f"Lista recursos encontrada: {lista_recursos is not None}")
+        
         if lista_recursos is not None:
+            recursos_count = len(lista_recursos.findall('recurso'))
+            print(f"Recursos a procesar: {recursos_count}")
+            
             for recurso_elem in lista_recursos.findall('recurso'):
-                recurso_data = {
-                    'id': recurso_elem.get('id'),
-                    'nombre': recurso_elem.find('nombre').text.strip(),
-                    'abreviatura': recurso_elem.find('abreviatura').text.strip(),
-                    'metrica': recurso_elem.find('metrica').text.strip(),
-                    'tipo': recurso_elem.find('tipo').text,
-                    'valorXhora': float(recurso_elem.find('valorXhora').text)
-                }
-                
-                if Validador.validar_tipo_recurso(recurso_data['tipo']):
-                    if agregar_recurso(recurso_data):
-                        print(f"Recurso guardado: {recurso_data['nombre']}")
-                        resultados['recursos_guardados'] += 1
+                try:
+                    recurso_id = recurso_elem.get('id')
+                    print(f"Procesando recurso ID: {recurso_id}")
+                    
+                    recurso_data = {
+                        'id': recurso_id,
+                        'nombre': "",
+                        'abreviatura': "",
+                        'metrica': "",
+                        'tipo': "",
+                        'valorXhora': 0.0
+                    }
+                    
+                    #Obtener todos los campos del recurso
+                    nombre_elem = recurso_elem.find('nombre')
+                    if nombre_elem is not None and nombre_elem.text is not None:
+                        recurso_data['nombre'] = nombre_elem.text.strip()
+                    
+                    abreviatura_elem = recurso_elem.find('abreviatura')
+                    if abreviatura_elem is not None and abreviatura_elem.text is not None:
+                        recurso_data['abreviatura'] = abreviatura_elem.text.strip()
+                    
+                    metrica_elem = recurso_elem.find('metrica')
+                    if metrica_elem is not None and metrica_elem.text is not None:
+                        recurso_data['metrica'] = metrica_elem.text.strip()
+                    
+                    tipo_elem = recurso_elem.find('tipo')
+                    if tipo_elem is not None and tipo_elem.text is not None:
+                        recurso_data['tipo'] = tipo_elem.text.upper()
+                    
+                    valor_elem = recurso_elem.find('valorXhora')
+                    if valor_elem is not None and valor_elem.text is not None:
+                        try:
+                            recurso_data['valorXhora'] = float(valor_elem.text)
+                        except ValueError:
+                            recurso_data['valorXhora'] = 0.0
+                    
+                    print(f"Datos recurso: {recurso_data}")
+                    
+                    #Validar campos obligatorios
+                    if not all([recurso_data['id'], recurso_data['nombre'], recurso_data['tipo']]):
+                        error_msg = f"Recurso con ID {recurso_data['id']} tiene campos obligatorios faltantes"
+                        resultados['errores'].append(error_msg)
+                        continue
+                    
+                    if Validador.validar_tipo_recurso(recurso_data['tipo']):
+                        if agregar_recurso(recurso_data):
+                            print(f"Recurso guardado: {recurso_data['nombre']}")
+                            resultados['recursos_guardados'] += 1
+                        else:
+                            print(f"Recurso ya existe: {recurso_data['nombre']}")
                     else:
-                        print(f"Recurso ya existe: {recurso_data['nombre']}")
-                else:
-                    error_msg = f"Tipo de recurso invalido: {recurso_data['tipo']}"
+                        error_msg = f"Tipo de recurso invalido: {recurso_data['tipo']}"
+                        resultados['errores'].append(error_msg)
+
+                except Exception as e:
+                    error_msg = f"Error procesando recurso: {str(e)}"
+                    print(f"ERROR en recurso: {error_msg}")
                     resultados['errores'].append(error_msg)
         
         #Procesar y guardar categorias
         lista_categorias = root.find('listaCategorias')
+        if lista_categorias is None:
+            #Intentar con nombre alternativo
+            lista_categorias = root.find('listaCategoria')
+            
         if lista_categorias is not None:
-            for categoria_elem in lista_categorias.findall('categoria'):
-                categoria_data = {
-                    'id': categoria_elem.get('id'),
-                    'nombre': categoria_elem.find('nombre').text.strip(),
-                    'descripcion': categoria_elem.find('description').text.strip(),
-                    'cargaTrabajo': categoria_elem.find('cargaTrabajo').text.strip()
-                }
-                
-                if agregar_categoria(categoria_data):
-                    print(f"Categoria guardada: {categoria_data['nombre']}")
-                    resultados['categorias_guardadas'] += 1
-                
-                #Procesar configuraciones de la categoria
-                lista_configuraciones = categoria_elem.find('listaConfiguraciones')
-                if lista_configuraciones is not None:
-                    for config_elem in lista_configuraciones.findall('configuracion'):
-                        config_data = {
-                            'id': config_elem.get('id'),
-                            'idCategoria': categoria_data['id'],
-                            'nombre': config_elem.find('nombre').text.strip(),
-                            'descripcion': config_elem.find('description').text.strip(),
-                            'recursos': {}
-                        }
+            categorias = lista_categorias.findall('categoria')
+            
+            for categoria_elem in categorias:
+                try:
+                    #Buscar descripcion con nombres alternativos
+                    descripcion_elem = categoria_elem.find('descripcion')
+                    if descripcion_elem is None:
+                        descripcion_elem = categoria_elem.find('description')
+                    
+                    descripcion_text = ""
+                    if descripcion_elem is not None and descripcion_elem.text is not None:
+                        descripcion_text = descripcion_elem.text.strip()
+                    
+                    categoria_data = {
+                        'id': categoria_elem.get('id'),
+                        'nombre': "",
+                        'descripcion': descripcion_text,
+                        'cargaTrabajo': ""
+                    }
+                    
+                    #Obtener nombre
+                    nombre_elem = categoria_elem.find('nombre')
+                    if nombre_elem is not None and nombre_elem.text is not None:
+                        categoria_data['nombre'] = nombre_elem.text.strip()
+                    
+                    #Obtener carga de trabajo
+                    carga_elem = categoria_elem.find('cargaTrabajo')
+                    if carga_elem is not None and carga_elem.text is not None:
+                        categoria_data['cargaTrabajo'] = carga_elem.text.strip()
+                    
+                    if agregar_categoria(categoria_data):
+                        print(f"Categoria guardada: {categoria_data['nombre']}")
+                        resultados['categorias_guardadas'] += 1
+                    
+                    #Procesar configuraciones de la categoria
+                    lista_configuraciones = categoria_elem.find('listaConfiguraciones')
+                    if lista_configuraciones is not None:
+                        configuraciones = lista_configuraciones.findall('configuracion')
+                        print(f"Configuraciones encontradas en categoria {categoria_data['id']}: {len(configuraciones)}")
                         
-                        #Procesar recursos de la configuracion
-                        recursos_config = config_elem.find('recursosConfiguracion')
-                        if recursos_config is not None:
-                            for recurso_config in recursos_config.findall('recurso'):
-                                recurso_id = recurso_config.get('id')
-                                cantidad = float(recurso_config.text)
-                                config_data['recursos'][recurso_id] = cantidad
-                        
-                        if agregar_configuracion(config_data):
-                            print(f"Configuracion guardada: {config_data['nombre']}")
-                            resultados['configuraciones_guardadas'] += 1
+                        for config_elem in configuraciones:
+                            try:
+                                #Buscar descripcion con nombres alternativos
+                                config_desc_elem = config_elem.find('descripcion')
+                                if config_desc_elem is None:
+                                    config_desc_elem = config_elem.find('description')
+                                
+                                config_desc_text = ""
+                                if config_desc_elem is not None and config_desc_elem.text is not None:
+                                    config_desc_text = config_desc_elem.text.strip()
+                                
+                                config_data = {
+                                    'id': config_elem.get('id'),
+                                    'idCategoria': categoria_data['id'],
+                                    'nombre': "",
+                                    'descripcion': config_desc_text,
+                                    'recursos': {}
+                                }
+                                
+                                #Obtener nombre de configuracion
+                                config_nombre_elem = config_elem.find('nombre')
+                                if config_nombre_elem is not None and config_nombre_elem.text is not None:
+                                    config_data['nombre'] = config_nombre_elem.text.strip()
+                                
+                                #Procesar recursos de la configuracion
+                                recursos_config = config_elem.find('recursosConfiguracion')
+                                if recursos_config is None:
+                                    recursos_config = config_elem.find('recursoConfiguracion')
+                                
+                                if recursos_config is not None:
+                                    print(f"Procesando recursos para configuracion {config_data['id']}")
+                                    for recurso_config in recursos_config.findall('recurso'):
+                                        recurso_id = recurso_config.get('id')
+                                        cantidad_text = "0"
+                                        if recurso_config.text is not None:
+                                            cantidad_text = recurso_config.text.strip()
+                                        try:
+                                            cantidad = float(cantidad_text)
+                                            config_data['recursos'][recurso_id] = cantidad
+                                            print(f"  - Recurso {recurso_id}: {cantidad}")
+                                        except ValueError:
+                                            print(f"Error: Cantidad invalida para recurso {recurso_id}: {cantidad_text}")
+                                
+                                if agregar_configuracion(config_data):
+                                    print(f"configuracion guardada: {config_data['nombre']} (ID: {config_data['id']})")
+                                    resultados['configuraciones_guardadas'] += 1
+                                else:
+                                    print(f"configuracion ya existe: {config_data['nombre']} (ID: {config_data['id']})")
+                                    
+                            except Exception as e:
+                                error_msg = f"Error procesando configuracion ID {config_elem.get('id')}: {str(e)}"
+                                print(f"ERROR: {error_msg}")
+                                resultados['errores'].append(error_msg)
+
+                except Exception as e:
+                    error_msg = f"Error procesando categoria: {str(e)}"
+                    print(f"ERROR: {error_msg}")
+                    resultados['errores'].append(error_msg)
         
         #Procesar y guardar clientes
         lista_clientes = root.find('listaClientes')
         if lista_clientes is not None:
-            for cliente_elem in lista_clientes.findall('cliente'):
-                nit = cliente_elem.get('nit')
-                
-                #Validar NIT con expresion regular
-                if Validador.validar_nit(nit):
-                    cliente_data = {
-                        'nit': nit,
-                        'nombre': cliente_elem.find('nombre').text.strip(),
-                        'usuario': cliente_elem.find('usuario').text.strip(),
-                        'clave': cliente_elem.find('clave').text.strip(),
-                        'direccion': cliente_elem.find('direccion').text.strip(),
-                        'correoElectronico': cliente_elem.find('correoElectronico').text.strip()
-                    }
+            clientes = lista_clientes.findall('cliente')
+            print(f"Clientes encontrados: {len(clientes)}")
+            
+            for cliente_elem in clientes:
+                try:
+                    nit = cliente_elem.get('nit') or cliente_elem.get('nlt')  #Manejar ambos atributos
+                    
+                    if not nit:
+                        error_msg = "Cliente sin NIT"
+                        resultados['errores'].append(error_msg)
+                        continue
+                    
+                    #Validar NIT con expresion regular
+                    if Validador.validar_nit(nit):
+                        cliente_data = {
+                            'nit': nit,
+                            'nombre': "",
+                            'usuario': "",
+                            'clave': "",
+                            'direccion': "",
+                            'correoElectronico': ""
+                        }
+                        
+                        #Obtener todos los campos del cliente
+                        nombre_elem = cliente_elem.find('nombre')
+                        if nombre_elem is not None and nombre_elem.text is not None:
+                            cliente_data['nombre'] = nombre_elem.text.strip()
+                        
+                        usuario_elem = cliente_elem.find('usuario')
+                        if usuario_elem is not None and usuario_elem.text is not None:
+                            cliente_data['usuario'] = usuario_elem.text.strip()
+                        
+                        clave_elem = cliente_elem.find('clave')
+                        if clave_elem is not None and clave_elem.text is not None:
+                            cliente_data['clave'] = clave_elem.text.strip()
+                        
+                        direccion_elem = cliente_elem.find('direccion')
+                        if direccion_elem is not None and direccion_elem.text is not None:
+                            cliente_data['direccion'] = direccion_elem.text.strip()
+                        
+                        correo_elem = cliente_elem.find('correoElectronico')
+                        if correo_elem is not None and correo_elem.text is not None:
+                            cliente_data['correoElectronico'] = correo_elem.text.strip()
 
-                    if agregar_cliente(cliente_data):
-                        print(f"Cliente guardado: {cliente_data['nombre']}")
-                        resultados['clientes_guardados'] += 1
+                        if agregar_cliente(cliente_data):
+                            print(f"Cliente guardado: {cliente_data['nombre']}")
+                            resultados['clientes_guardados'] += 1
 
-                    #Procesar instancias del cliente
-                    lista_instancias = cliente_elem.find('listaInstancias')
-                    if lista_instancias is not None:
-                        for instancia_elem in lista_instancias.findall('instancia'):
-                            fecha_inicio = instancia_elem.find('fechaInicio').text
-                            fecha_extraida = Validador.extraer_fecha(fecha_inicio)
+                        #Procesar instancias del cliente
+                        lista_instancias = cliente_elem.find('listaInstancias')
+                        if lista_instancias is not None:
+                            instancias = lista_instancias.findall('instancia')
+                            print(f"Instancias encontradas para cliente {nit}: {len(instancias)}")
                             
-                            instancia_data = {
-                                'id': instancia_elem.get('id'),
-                                'nitCliente': nit,
-                                'idConfiguracion': instancia_elem.find('idConfiguracion').text,
-                                'nombre': instancia_elem.find('nombre').text.strip(),
-                                'fechaInicio': fecha_extraida or fecha_inicio,
-                                'estado': instancia_elem.find('estado').text
-                            }
-                            
-                            #Procesar fecha final si hay
-                            fecha_final_elem = instancia_elem.find('fechaFinal')
-                            if fecha_final_elem is not None:
-                                fecha_final_extraida = Validador.extraer_fecha(fecha_final_elem.text)
-                                instancia_data['fechaFinal'] = fecha_final_extraida or fecha_final_elem.text
-                            
-                            if Validador.validar_estado_instancia(instancia_data['estado']):
-                                if agregar_instancia(instancia_data):
-                                    print(f"Instancia guardada: {instancia_data['nombre']}")
-                                    resultados['instancias_guardadas'] += 1
-                            else:
-                                error_msg = f"Estado de instancia invalido: {instancia_data['estado']}"
-                                resultados['errores'].append(error_msg)
-                else:
-                    error_msg = f"NIT invalido: {nit}"
+                            for instancia_elem in instancias:
+                                try:
+                                    fecha_inicio_elem = instancia_elem.find('fechaInicio')
+                                    fecha_inicio_text = ""
+                                    if fecha_inicio_elem is not None and fecha_inicio_elem.text is not None:
+                                        fecha_inicio_text = fecha_inicio_elem.text
+                                    fecha_extraida = Validador.extraer_fecha(fecha_inicio_text)
+                                    
+                                    instancia_data = {
+                                        'id': instancia_elem.get('id'),
+                                        'nitCliente': nit,
+                                        'idConfiguracion': "",
+                                        'nombre': "",
+                                        'fechaInicio': fecha_extraida or fecha_inicio_text,
+                                        'estado': "VIGENTE"
+                                    }
+                                    
+                                    #Obtener idConfiguracion
+                                    id_config_elem = instancia_elem.find('idConfiguracion')
+                                    if id_config_elem is not None and id_config_elem.text is not None:
+                                        instancia_data['idConfiguracion'] = id_config_elem.text
+                                    
+                                    #Obtener nombre
+                                    nombre_inst_elem = instancia_elem.find('nombre')
+                                    if nombre_inst_elem is not None and nombre_inst_elem.text is not None:
+                                        instancia_data['nombre'] = nombre_inst_elem.text.strip()
+                                    
+                                    #Obtener estado
+                                    estado_elem = instancia_elem.find('estado')
+                                    if estado_elem is not None and estado_elem.text is not None:
+                                        instancia_data['estado'] = estado_elem.text.upper()
+                                    
+                                    #Procesar fecha final si hay
+                                    fecha_final_elem = instancia_elem.find('fechaFinal')
+                                    if fecha_final_elem is not None and fecha_final_elem.text is not None:
+                                        fecha_final_extraida = Validador.extraer_fecha(fecha_final_elem.text)
+                                        instancia_data['fechaFinal'] = fecha_final_extraida or fecha_final_elem.text
+                                    
+                                    print(f"Procesando instancia ID: {instancia_data['id']}, Estado: {instancia_data['estado']}")
+                                    
+                                    if Validador.validar_estado_instancia(instancia_data['estado']):
+                                        if agregar_instancia(instancia_data):
+                                            print(f"Instancia guardada: {instancia_data['nombre']} (ID: {instancia_data['id']})")
+                                            resultados['instancias_guardadas'] += 1
+                                        else:
+                                            print(f"Instancia ya existe: {instancia_data['nombre']} (ID: {instancia_data['id']})")
+                                    else:
+                                        error_msg = f"Estado de instancia invalido: {instancia_data['estado']}"
+                                        print(f"ERROR: {error_msg}")
+                                        resultados['errores'].append(error_msg)
+                                        
+                                except Exception as e:
+                                    error_msg = f"Error procesando instancia ID {instancia_elem.get('id')}: {str(e)}"
+                                    print(f"ERROR: {error_msg}")
+                                    resultados['errores'].append(error_msg)
+                    else:
+                        error_msg = f"NIT invalido: {nit}"
+                        resultados['errores'].append(error_msg)
+                except Exception as e:
+                    error_msg = f"Error procesando cliente: {str(e)}"
+                    print(f"ERROR: {error_msg}")
                     resultados['errores'].append(error_msg)
         
         return jsonify({
             "estado": "exito",
-            "mensaje": "Datos guardados en archivo XML",
+            "mensaje": "Datos procesados correctamente",
             "resultados": resultados
         })
         
     except ET.ParseError as e:
+        print(f"ERROR ParseError: {str(e)}")
         return jsonify({"estado": "error", "mensaje": f"XML mal formado: {str(e)}"}), 400
         
     except Exception as e:
-        return jsonify({"estado": "error", "mensaje": f"Error: {str(e)}"}), 400
-    
+        print(f"ERROR General: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"estado": "error", "mensaje": f"Error procesando configuracion: {str(e)}"}), 400
 
-#RUTA PARA RECIBIR MENSAJES DE CONSUMO
+#ENDPOINT PARA RECIBIR MENSAJES DE CONSUMO 
 @app.route('/api/consumo', methods=['POST'])
 def recibir_consumo():
-    """
-    Endpoint para recibir mensajes XML de consumo
-    """
     try:
         xml_data = request.data.decode('utf-8')
         root = ET.fromstring(xml_data)
@@ -751,9 +1084,12 @@ def recibir_consumo():
             nit_cliente = consumo_elem.get('nitCliente')
             id_instancia = consumo_elem.get('idInstancia')
             tiempo = float(consumo_elem.find('tiempo').text)
-            fecha_hora = consumo_elem.find('fechahora').text
             
-            #Extraer fecha/hora
+            #Buscar 'fechahora' o 'fechaHora'
+            fecha_hora_elem = consumo_elem.find('fechahora') or consumo_elem.find('fechaHora')
+            fecha_hora = fecha_hora_elem.text if fecha_hora_elem is not None else ""
+            
+            #Extraer fecha/hora con regex
             fecha_hora_extraida = Validador.extraer_fecha_hora(fecha_hora)
             
             if fecha_hora_extraida:
@@ -780,21 +1116,50 @@ def recibir_consumo():
         
     except Exception as e:
         return jsonify({"estado": "error", "mensaje": f"Error: {str(e)}"}), 400
-    
 
 #Ruta basica para probar que la API funcione
 @app.route('/')
 def hola_mundo():
     return jsonify({"mensaje": "API funcionando", "estado": "OK"})
 
-#RENDPOINT PARA ELIMINAR TODOS LOS DATOS (inicializar sistema)
+#ENDPOINT PARA ELIMINAR TODOS LOS DATOS (inicializar sistema)
 @app.route('/api/reset', methods=['POST'])
 def resetear_datos():
     try:
+        #Lista de todos los archivos XML a resetear
+        archivos_xml = [
+            ARCHIVO_RECURSOS,
+            ARCHIVO_CATEGORIAS,
+            ARCHIVO_CLIENTES,
+            ARCHIVO_CONFIGURACIONES,
+            ARCHIVO_INSTANCIAS,
+            ARCHIVO_CONSUMOS
+        ]
+        
+        #Eliminar y recrear cada archivo
+        for archivo in archivos_xml:
+            try:
+                if os.path.exists(archivo):
+                    os.remove(archivo)
+                    print(f"Eliminado: {archivo}")
+            except Exception as e:
+                print(f"Error eliminando {archivo}: {e}")
+        
+        #Crear archivos vacios nuevos
         inicializar_archivos_xml()
-        return jsonify({"estado": "exito", "mensaje": "Sistema inicializado"})
+        
+        print("Sistema completamente reiniciado")
+        
+        return jsonify({
+            "estado": "exito",
+            "mensaje": "Sistema inicializado correctamente - Todos los datos fueron eliminados"
+        })
+        
     except Exception as e:
-        return jsonify({"estado": "error", "mensaje": f"Error: {str(e)}"}), 400
+        return jsonify({
+            "estado": "error", 
+            "mensaje": f"Error al resetear el sistema: {str(e)}"
+        }), 400
 
 
 # =============================================

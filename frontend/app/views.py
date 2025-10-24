@@ -32,7 +32,7 @@ def enviar_configuracion(request):
             })
     
     #GET: Mostrar formulario subido
-    return render(request, 'app/enviar_configuracion.html')
+    return render(request, 'enviar_configuracion.html')
 
 #VISTA PARA ENVIAR MENSAJES DE CONSUMO
 def enviar_consumo(request):
@@ -56,7 +56,7 @@ def enviar_consumo(request):
             })
     
     #GET: Mostrar formulario
-    return render(request, 'app/enviar_consumo.html')
+    return render(request, 'enviar_consumo.html')
 
 #VISTA PARA INICIALIZAR/RESETEAR EL SISTEMA
 def inicializar_sistema(request):
@@ -102,7 +102,7 @@ def consultar_datos(request):
 
 #VISTA PARA CREACION DE NUEVOS DATOS
 def crear_datos(request):
-    return render(request, 'app/crear_datos.html')
+    return render(request, 'crear_datos.html')
 
 #VISTA PARA PROCESO DE FACTURACION
 def proceso_facturacion(request):
@@ -137,7 +137,7 @@ def proceso_facturacion(request):
 
 #VISTA PARA GENERACION DE REPORTES
 def reportes_pdf(request):
-    return render(request, 'app/reportes_pdf.html')
+    return render(request, 'reportes_pdf.html')
 
 #VISTA DE AYUDA
 def ayuda(request):
@@ -146,4 +146,4 @@ def ayuda(request):
         'carnet': '202402955',
         'curso': 'Introducción a la Programación y Computación 2'
     }
-    return render(request, 'app/ayuda.html', {'estudiante': info_estudiante})
+    return render(request, 'ayuda.html', {'estudiante': info_estudiante})

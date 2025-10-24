@@ -87,6 +87,37 @@
                 {% endif %}
             </div>
 
+            <!-- CONFIGURACIONES -->
+            <div class="section">
+                <h2>Configuraciones Disponibles ({{ datos.configuraciones|length }})</h2>
+                {% if datos.configuraciones %}
+                <div class="data-grid">
+                    {% for config in datos.configuraciones %}
+                    <div class="data-card">
+                        <h3>{{ config.nombre }}</h3>
+                        <p><strong>ID:</strong> {{ config.id }}</p>
+                        <p><strong>Categoria ID:</strong> {{ config.idCategoria }}</p>
+                        <p><strong>Descripcion:</strong> {{ config.descripcion }}</p>
+                        {% if config.recursos %}
+                        <p><strong>Recursos:</strong></p>
+                        <div style="margin-top: 10px;">
+                            {% for recurso_id, cantidad in config.recursos.items %}
+                            <div style="background: #e9ecef; padding: 5px; margin: 2px 0; border-radius: 3px; font-size: 14px;">
+                                • Recurso {{ recurso_id }}: {{ cantidad }} unidades
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay configuraciones registradas en el sistema</p>
+                </div>
+                {% endif %}
+            </div>
+
             <!-- CLIENTES E INSTANCIAS -->
             <div class="section">
                 <h2>Clientes e Instancias ({{ datos.clientes|length }})</h2>
@@ -98,18 +129,27 @@
                         <p><strong>NIT:</strong> {{ cliente.nit }}</p>
                         <p><strong>Usuario:</strong> {{ cliente.usuario }}</p>
                         <p><strong>Email:</strong> {{ cliente.correoElectronico }}</p>
-                        {% if cliente.instancias %}
-                        <p><strong>Instancias:</strong> {{ cliente.instancias|length }}</p>
+                        <p><strong>Direccion:</strong> {{ cliente.direccion }}</p>
+            
+                        <!-- Mostrar instancias del cliente -->
+                        {% if datos.instancias %}
+                        <p><strong>Instancias de este cliente:</strong></p>
                         <div style="margin-top: 10px;">
-                            {% for instancia in cliente.instancias %}
+                            {% for instancia in datos.instancias %}
+                            {% if instancia.nitCliente == cliente.nit %}
                             <div class="consumo-item">
-                                <strong>{{ instancia.nombre }}</strong><br>
+                                <strong>{{ instancia.nombre }}</strong> (ID: {{ instancia.id }})<br>
                                 Estado: 
-                                <span class="badge {% if instancia.estado == 'Vigente' %}badge-success{% else %}badge-danger{% endif %}">
+                                <span class="badge {% if instancia.estado == 'VIGENTE' %}badge-success{% else %}badge-danger{% endif %}">
                                     {{ instancia.estado }}
                                 </span><br>
-                                Inicio: {{ instancia.fechaInicio }}
+                                Configuracion: {{ instancia.idConfiguracion }}<br>
+                                Inicio: {{ instancia.fechaInicio }}<br>
+                                {% if instancia.fechaFinal %}
+                                Final: {{ instancia.fechaFinal }}
+                                {% endif %}
                             </div>
+                            {% endif %}
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -119,6 +159,36 @@
                 {% else %}
                 <div class="empty-state">
                     <p>No hay clientes registrados en el sistema</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- INSTANCIAS -->
+            <div class="section">
+                <h2>Todas las Instancias ({{ datos.instancias|length }})</h2>
+                {% if datos.instancias %}
+                <div class="data-grid">
+                    {% for instancia in datos.instancias %}
+                    <div class="data-card">
+                        <h3>{{ instancia.nombre }}</h3>
+                        <p><strong>ID:</strong> {{ instancia.id }}</p>
+                        <p><strong>Cliente NIT:</strong> {{ instancia.nitCliente }}</p>
+                        <p><strong>Configuracion:</strong> {{ instancia.idConfiguracion }}</p>
+                        <p><strong>Estado:</strong> 
+                            <span class="badge {% if instancia.estado == 'VIGENTE' %}badge-success{% else %}badge-danger{% endif %}">
+                                {{ instancia.estado }}
+                            </span>
+                        </p>
+                        <p><strong>Fecha Inicio:</strong> {{ instancia.fechaInicio }}</p>
+                        {% if instancia.fechaFinal %}
+                        <p><strong>Fecha Final:</strong> {{ instancia.fechaFinal }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No hay instancias registradas en el sistema</p>
                 </div>
                 {% endif %}
             </div>
