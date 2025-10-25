@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<clientes><cliente nit="32644-5"><nombre>ipc</nombre><usuario>prueba</usuario><clave>proyecto</clave><direccion>Direccion del cliente</direccion><correoElectronico>eMailCliente</correoElectronico><listaInstancias /></cliente><cliente nit="12345-6"><nombre>awda</nombre><usuario>wadawd</usuario><clave>awd</clave><direccion>asdas</direccion><correoElectronico>wda@jhasd.com</correoElectronico><listaInstancias /></cliente></clientes>

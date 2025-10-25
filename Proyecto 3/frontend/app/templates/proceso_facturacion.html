@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proceso de Facturación</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .facturacion-form { background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #495057; }
+        input[type="date"] { padding: 10px; border: 1px solid #ced4da; border-radius: 4px; width: 200px; }
+        .btn { 
+            padding: 12px 24px; 
+            background: #c52f3e; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover { background: #a33b43; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+        .resultado { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .factura-info { background: white; padding: 15px; border-radius: 6px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proceso de Facturación</h1>
+        <p>Genere facturas para clientes por recursos consumidos no facturados previamente</p>
+
+        <div class="facturacion-form">
+            <h3>📅 Seleccionar Rango de Fechas</h3>
+            <form id="facturacionForm" method="post">
+                {% csrf_token %}
+                    <div class="form-group">
+                    <label for="fecha_inicio">Fecha de Inicio:</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label for="fecha_fin">Fecha de Fin:</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" required>
+                </div>
+                <button type="submit" class="btn" id="btnGenerar">Generar Facturas</button>
+            </form>
+        </div>
+
+        <div id="resultado" class="resultado">
+            <h3>Resultado del Proceso</h3>
+            <div id="facturas-generadas"></div>
+        </div>
+
+        <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
+    </div>
+
+        <script>
+        document.getElementById('facturacionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btnGenerar = document.getElementById('btnGenerar');
+            const resultadoDiv = document.getElementById('resultado');
+            const facturasDiv = document.getElementById('facturas-generadas');
+                
+            btnGenerar.disabled = true;
+            btnGenerar.textContent = 'Generando...';
+        
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
+
+            //Obtener valores de los inputs
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaFin = document.getElementById('fecha_fin').value;
+            
+            console.log('Fechas a enviar:', {fecha_inicio: fechaInicio, fecha_fin: fechaFin});
+
+            const data = {
+                'fecha_inicio': fechaInicio,
+                'fecha_fin': fechaFin
+            };
+
+            const formData = new FormData();
+            formData.append('fecha_inicio', fechaInicio);
+            formData.append('fecha_fin', fechaFin);
+
+            fetch("{% url 'proceso_facturacion' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Respuesta del backend:', data);
+                
+                if (data.estado === 'exito') {
+                    resultadoDiv.className = 'resultado exito';
+
+                    let html = `<h3>${data.mensaje}</h3>`;
+                    html += `<p><strong>Total facturado:</strong> Q ${data.total_facturado || 0}</p>`;
+                
+                    if (data.facturas && data.facturas.length > 0) {
+                        data.facturas.forEach(factura => {
+                            html += `
+                                <div class="factura-info">
+                                    <h4>Factura ${factura.numero_factura}</h4>
+                                    <p><strong>Cliente:</strong> ${factura.nombre_cliente} (${factura.nit_cliente})</p>
+                                    <p><strong>Fecha:</strong> ${factura.fecha_factura}</p>
+                                    <p><strong>Monto:</strong> Q ${factura.monto_total}</p>
+                                    <p><strong>Instancias facturadas:</strong> ${factura.detalle.length}</p>
+                                    <button onclick="verDetalleFactura('${factura.numero_factura}', ${JSON.stringify(factura).replace(/"/g, '&quot;')})" style="margin-top: 10px; padding: 5px 10px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                        Ver Detalle
+                                    </button>
+                                    <button onclick="generarPDFFactura('${factura.numero_factura}')" style="margin-top: 10px; padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                        Descargar PDF
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `<p>No se generaron facturas (no hay consumos en el periodo seleccionado)</p>`;
+                    }
+
+                    facturasDiv.innerHTML = html;
+                } else {
+                    resultadoDiv.className = 'resultado error';
+                    facturasDiv.innerHTML = `<strong>Error:</strong> ${data.mensaje}`;
+                }
+
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = 'Generar Facturas';
+            })
+            .catch(error => {
+                console.error('Error en fetch:', error);
+                resultadoDiv.className = 'resultado error';
+                facturasDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = 'Generar Facturas';
+            });
+        });
+
+        function verDetalleFactura(numeroFactura, facturaData) {
+            let detalleHtml = `
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <h3 style="text-align: center; color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px;">
+                        Detalle de Factura ${numeroFactura}
+                    </h3>
+            
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                        <h4 style="margin-top: 0; color: #495057;">Información General</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6; font-weight: bold; width: 30%;">Cliente:</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${facturaData.nombre_cliente} (${facturaData.nit_cliente})</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6; font-weight: bold;">Periodo:</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${facturaData.fecha_inicio} a ${facturaData.fecha_fin}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6; font-weight: bold;">Fecha de Factura:</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${facturaData.fecha_factura}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; font-weight: bold; color: #c52f3e;">Total Facturado:</td>
+                                <td style="padding: 8px; font-weight: bold; color: #c52f3e; font-size: 18px;">Q ${facturaData.monto_total}</td>
+                            </tr>
+                        </table>
+                    </div>
+            `;
+
+            if (facturaData.detalle && facturaData.detalle.length > 0) {
+                detalleHtml += `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                        <h4 style="margin-top: 0; color: #495057;">Instancias Facturadas</h4>
+                `;
+
+                facturaData.detalle.forEach((detalle, index) => {
+                    detalleHtml += `
+                        <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #007acc;">
+                            <h5 style="margin: 0 0 10px 0; color: #007acc;">
+                                ${detalle.instancia_nombre} (ID: ${detalle.instancia_id})
+                            </h5>
+                            <p style="margin: 5px 0;"><strong>Costo:</strong> Q ${detalle.costo}</p>
+                            <p style="margin: 5px 0;"><strong>Consumos registrados:</strong> ${detalle.consumos.length}</p>
+                    
+                            <div style="margin-top: 10px;">
+                                <button onclick="mostrarConsumosInstancia(${index})" 
+                                        style="padding: 5px 10px; background: #6c757d; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                        Ver Consumos
+                                </button>
+                            </div>
+                    
+                            <div id="consumos-${index}" style="display: none; margin-top: 10px; background: #e9ecef; padding: 10px; border-radius: 4px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    <thead>
+                                        <tr style="background: #495057; color: white;">
+                                            <th style="padding: 8px; text-align: left;">Fecha y Hora</th>
+                                            <th style="padding: 8px; text-align: right;">Tiempo (horas)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    detalle.consumos.forEach(consumo => {
+                        detalleHtml += `
+                            <tr style="border-bottom: 1px solid #dee2e6;">
+                                <td style="padding: 8px;">${consumo.fechahora}</td>
+                                <td style="padding: 8px; text-align: right;">${consumo.tiempo}</td>
+                            </tr>
+                        `;
+                    });
+
+                    detalleHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                detalleHtml += `</div>`;
+            } else {
+                detalleHtml += `
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeaa7; text-align: center;">
+                        <p style="margin: 0; color: #856404;">No hay detalles disponibles para esta factura</p>
+                    </div>
+                `;
+            }
+
+            detalleHtml += `
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="generarPDFFactura('${numeroFactura}')" 
+                                style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                Descargar PDF
+                        </button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            //Crear modal
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+    
+            const modalContent = document.createElement('div');
+            modalContent.style.background = 'white';
+            modalContent.style.padding = '20px';
+            modalContent.style.borderRadius = '8px';
+            modalContent.style.maxWidth = '90%';
+            modalContent.style.maxHeight = '90vh';
+            modalContent.style.overflow = 'auto';
+            modalContent.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            modalContent.innerHTML = detalleHtml;
+    
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+        //Funcion para mostrar/ocultar consumos
+        function mostrarConsumosInstancia(index) {
+            const consumosDiv = document.getElementById(`consumos-${index}`);
+            if (consumosDiv.style.display === 'none') {
+                consumosDiv.style.display = 'block';
+            } else {
+                consumosDiv.style.display = 'none';
+            }
+        }
+
+        function generarPDFFactura(numeroFactura) {
+            console.log(`Solicitando PDF para factura: ${numeroFactura}`);
+
+            //Mostrar loading
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            resultadoDiv.innerHTML = '<p>Generando PDF, por favor espere...</p>';
+
+            //Llamar directamente al backend Flask
+            fetch(`http://127.0.0.1:5000/api/reportes/factura`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'numero_factura': numeroFactura
+                })
+            })
+            .then(response => {
+                console.log('Respuesta recibida:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos recibidos:', data);
+                if (data.estado === 'exito') {
+                    resultadoDiv.className = 'resultado exito';
+                    resultadoDiv.innerHTML = `<strong>PDF generado exitosamente</strong><p>Descargando: ${data.archivo}</p>`;
+            
+                    //Descargar el PDF directamente
+                    const pdfUrl = `http://127.0.0.1:5000/api/reportes/descargar/${data.archivo}`;
+                    console.log('Descargando desde:', pdfUrl);
+            
+                    //Crear un enlace temporal para la descarga
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.download = data.archivo;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+            
+                } else {
+                    resultadoDiv.className = 'resultado error';
+                    resultadoDiv.innerHTML = `<strong>Error generando PDF:</strong> ${data.mensaje}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultadoDiv.className = 'resultado error';
+                resultadoDiv.innerHTML = `<strong>Error de conexión:</strong> ${error.message}`;
+            });
+        }
+    </script>
+</body>
+</html>

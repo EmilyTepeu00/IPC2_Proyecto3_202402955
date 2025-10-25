@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayuda</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .info-section { background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; }
+        .info-section h2 { color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px; }
+        .student-info { background: #c7dff9; padding: 20px; border-radius: 6px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ayuda e Información</h1>
+
+        <!-- INFORMACION DE ESTUDIANTE -->
+        <div class="info-section">
+            <h2>Información de Estudiante</h2>
+            <div class="student-info">
+                <p><strong>Nombre:</strong> Emily Maritza Tepeu Guacamaya</p>
+                <p><strong>Carnet:</strong> 202402955</p>
+                <p><strong>Curso:</strong> Introducción a la Programación y Computación 2</p>
+                <p><strong>Proyecto:</strong> Tecnologías Chapinas</p>
+            </div>
+        </div>
+
+
+        <!-- GUIA DE USO -->
+        <div class="info-section">
+            <h2>Guia de Uso Rapido</h2>
+            <ol>
+                <li><strong>Inicializar Sistema:</strong> Use el boton "Inicializar Sistema" para comenzar con datos limpios</li>
+                <li><strong>Cargar Configuración:</strong> Suba un archivo XML con recursos, categorias y clientes</li>
+                <li><strong>Registrar Consumos:</strong> Suba archivos XML con consumos de instancias</li>
+                <li><strong>Consultar Datos:</strong> Visualice toda la información cargada en el sistema</li>
+                <li><strong>Generar Facturas:</strong> Use el proceso de facturación para generar cobros</li>
+            </ol>
+        </div>
+
+        <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
+    </div>
+</body>
+</html>
