@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<instancias />
+<instancias><instancia id="1" nitCliente="32644-5"><idConfiguracion>1</idConfiguracion><nombre>Instancia Uno</nombre><fechaInicio>26/02/2009</fechaInicio><estado>CANCELADA</estado><fechaFinal>27/06/2009</fechaFinal><preciosOriginales><recurso id="1" precio="40.0" /><recurso id="2" precio="50.0" /></preciosOriginales></instancia><instancia id="2" nitCliente="32644-5"><idConfiguracion>2</idConfiguracion><nombre>Instancia Dos</nombre><fechaInicio>26/02/2003</fechaInicio><estado>VIGENTE</estado><fechaFinal>27/06/2009</fechaFinal><preciosOriginales><recurso id="2" precio="50.0" /><recurso id="3" precio="30.0" /></preciosOriginales></instancia></instancias>

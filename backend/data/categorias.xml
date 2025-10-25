@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<categorias />
+<categorias><categoria id="1"><nombre>Categoria 1</nombre><description>Configuraciones de alta carga</description><cargaTrabajo>Alta</cargaTrabajo><listaConfiguraciones /></categoria></categorias>

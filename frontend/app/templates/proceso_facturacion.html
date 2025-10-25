@@ -36,9 +36,9 @@
 
         <div class="facturacion-form">
             <h3>📅 Seleccionar Rango de Fechas</h3>
-            <form id="facturacionForm">
+            <form id="facturacionForm" method="post">
                 {% csrf_token %}
-                <div class="form-group">
+                    <div class="form-group">
                     <label for="fecha_inicio">Fecha de Inicio:</label>
                     <input type="date" id="fecha_inicio" name="fecha_inicio" required>
                 </div>
@@ -58,80 +58,201 @@
         <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
     </div>
 
-    <script>
+        <script>
         document.getElementById('facturacionForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-        const btnGenerar = document.getElementById('btnGenerar');
-        const resultadoDiv = document.getElementById('resultado');
-        const facturasDiv = document.getElementById('facturas-generadas');
+            const btnGenerar = document.getElementById('btnGenerar');
+            const resultadoDiv = document.getElementById('resultado');
+            const facturasDiv = document.getElementById('facturas-generadas');
+                
+            btnGenerar.disabled = true;
+            btnGenerar.textContent = 'Generando...';
+        
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
+
+            //Obtener valores de los inputs
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaFin = document.getElementById('fecha_fin').value;
             
-        btnGenerar.disabled = true;
-        btnGenerar.textContent = 'Generando...';
-    
-        resultadoDiv.style.display = 'block';
-        resultadoDiv.className = 'resultado';
-        facturasDiv.innerHTML = '<p>Procesando facturación...</p>';
+            console.log('Fechas a enviar:', {fecha_inicio: fechaInicio, fecha_fin: fechaFin});
 
-        const formData = new FormData(this);
-        const data = {
-            'fecha_inicio': formData.get('fecha_inicio'),
-            'fecha_fin': formData.get('fecha_fin')
-        };
+            const data = {
+                'fecha_inicio': fechaInicio,
+                'fecha_fin': fechaFin
+            };
 
-        fetch(this.action, {
-            method: 'POST',
-            body: JSON.stringify(data),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.estado === 'exito' || data.estado === 'exito') {
-                resultadoDiv.className = 'resultado exito';
+            const formData = new FormData();
+            formData.append('fecha_inicio', fechaInicio);
+            formData.append('fecha_fin', fechaFin);
 
-                let html = `<h3>${data.mensaje}</h3>`;
-                html += `<p><strong>Total facturado:</strong> Q ${data.total_facturado || 0}</p>`;
-            
-                if (data.facturas && data.facturas.length > 0) {
-                    data.facturas.forEach(factura => {
-                        html += `
-                            <div class="factura-info">
-                                <h4>Factura ${factura.numero_factura}</h4>
-                                <p><strong>Cliente:</strong> ${factura.nombre_cliente} (${factura.nit_cliente})</p>
-                                <p><strong>Fecha:</strong> ${factura.fecha_factura}</p>
-                                <p><strong>Monto:</strong> Q ${factura.monto_total}</p>
-                                <p><strong>Instancias facturadas:</strong> ${factura.detalle.length}</p>
-                                <button onclick="verDetalleFactura('${factura.numero_factura}')" style="margin-top: 10px; padding: 5px 10px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer;">
-                                    Ver Detalle
-                                </button>
-                            </div>
-                        `;
-                    });
+            fetch("{% url 'proceso_facturacion' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Respuesta del backend:', data);
+                
+                if (data.estado === 'exito') {
+                    resultadoDiv.className = 'resultado exito';
+
+                    let html = `<h3>${data.mensaje}</h3>`;
+                    html += `<p><strong>Total facturado:</strong> Q ${data.total_facturado || 0}</p>`;
+                
+                    if (data.facturas && data.facturas.length > 0) {
+                        data.facturas.forEach(factura => {
+                            html += `
+                                <div class="factura-info">
+                                    <h4>Factura ${factura.numero_factura}</h4>
+                                    <p><strong>Cliente:</strong> ${factura.nombre_cliente} (${factura.nit_cliente})</p>
+                                    <p><strong>Fecha:</strong> ${factura.fecha_factura}</p>
+                                    <p><strong>Monto:</strong> Q ${factura.monto_total}</p>
+                                    <p><strong>Instancias facturadas:</strong> ${factura.detalle.length}</p>
+                                    <button onclick="verDetalleFactura('${factura.numero_factura}', ${JSON.stringify(factura).replace(/"/g, '&quot;')})" style="margin-top: 10px; padding: 5px 10px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                        Ver Detalle
+                                    </button>
+                                    <button onclick="generarPDFFactura('${factura.numero_factura}')" style="margin-top: 10px; padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                        Descargar PDF
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `<p>No se generaron facturas (no hay consumos en el periodo seleccionado)</p>`;
+                    }
+
+                    facturasDiv.innerHTML = html;
+                } else {
+                    resultadoDiv.className = 'resultado error';
+                    facturasDiv.innerHTML = `<strong>Error:</strong> ${data.mensaje}`;
                 }
 
-                facturasDiv.innerHTML = html;
-            } else {
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = 'Generar Facturas';
+            })
+            .catch(error => {
+                console.error('Error en fetch:', error);
                 resultadoDiv.className = 'resultado error';
-                facturasDiv.innerHTML = `<strong>Error:</strong> ${data.mensaje}`;
-            }
-
-            btnGenerar.disabled = false;
-            btnGenerar.textContent = 'Generar Facturas';
-        })
-        .catch(error => {
-            resultadoDiv.className = 'resultado error';
-            facturasDiv.innerHTML = `<strong>Error:</strong> ${error}`;
-            btnGenerar.disabled = false;
-            btnGenerar.textContent = 'Generar Facturas';
+                facturasDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = 'Generar Facturas';
+            });
         });
-    });
 
-    function verDetalleFactura(numeroFactura) {
-        alert(`Detalle de factura ${numeroFactura}\n\nfaltaaaaaaaaaaa`);
-    }
+        function verDetalleFactura(numeroFactura, facturaData) {
+            let detalleHtml = `<h3>Detalle de Factura ${numeroFactura}</h3>`;
+            detalleHtml += `<p><strong>Cliente:</strong> ${facturaData.nombre_cliente} (${facturaData.nit_cliente})</p>`;
+            detalleHtml += `<p><strong>Periodo:</strong> ${facturaData.fecha_inicio} a ${facturaData.fecha_fin}</p>`;
+            detalleHtml += `<p><strong>Total:</strong> Q ${facturaData.monto_total}</p>`;
+            
+            detalleHtml += `<h4>Instancias Facturadas:</h4>`;
+            facturaData.detalle.forEach(detalle => {
+                detalleHtml += `
+                    <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px;">
+                        <strong>${detalle.instancia_nombre}</strong> (ID: ${detalle.instancia_id})<br>
+                        <strong>Costo:</strong> Q ${detalle.costo}<br>
+                        <strong>Consumos:</strong> ${detalle.consumos.length} registros
+                    </div>
+                `;
+            });
+            
+            //Crear ventana emergente
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.background = 'white';
+            modalContent.style.padding = '20px';
+            modalContent.style.borderRadius = '8px';
+            modalContent.style.maxWidth = '600px';
+            modalContent.style.maxHeight = '80vh';
+            modalContent.style.overflow = 'auto';
+            modalContent.innerHTML = detalleHtml + `
+                <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 15px; padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Cerrar
+                </button>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+
+        function generarPDFFactura(numeroFactura) {
+            console.log(`Solicitando PDF para factura: ${numeroFactura}`);
+
+            //Mostrar loading
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            resultadoDiv.innerHTML = '<p>Generando PDF, por favor espere...</p>';
+
+            //Llamar directamente al backend Flask
+            fetch(`http://127.0.0.1:5000/api/reportes/factura`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    'numero_factura': numeroFactura
+                })
+            })
+            .then(response => {
+                console.log('Respuesta recibida:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos recibidos:', data);
+                if (data.estado === 'exito') {
+                    resultadoDiv.className = 'resultado exito';
+                    resultadoDiv.innerHTML = `<strong>PDF generado exitosamente</strong><p>Descargando: ${data.archivo}</p>`;
+            
+                    //Descargar el PDF directamente
+                    const pdfUrl = `http://127.0.0.1:5000/api/reportes/descargar/${data.archivo}`;
+                    console.log('Descargando desde:', pdfUrl);
+            
+                    //Crear un enlace temporal para la descarga
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.download = data.archivo;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+            
+                } else {
+                    resultadoDiv.className = 'resultado error';
+                    resultadoDiv.innerHTML = `<strong>Error generando PDF:</strong> ${data.mensaje}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultadoDiv.className = 'resultado error';
+                resultadoDiv.innerHTML = `<strong>Error de conexión:</strong> ${error.message}`;
+            });
+        }
     </script>
 </body>
 </html>

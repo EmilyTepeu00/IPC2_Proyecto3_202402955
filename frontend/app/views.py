@@ -1,7 +1,7 @@
+import json
+import requests
 from django.shortcuts import render
 from django.http import JsonResponse
-import requests
-import os
 from frontend.settings import BACKEND_URL
 
 #VISTA PRINCIPAL
@@ -104,15 +104,250 @@ def consultar_datos(request):
 def crear_datos(request):
     return render(request, 'crear_datos.html')
 
+# =============================================
+# VISTAS PARA CREACIÓN DE DATOS INDIVIDUALES
+# =============================================
+
+def crear_recurso(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos del recurso
+            if not all(key in data for key in ['id', 'nombre', 'abreviatura', 'metrica', 'tipo', 'valorXhora']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para el recurso"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/recurso",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear recurso: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
+def crear_categoria(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos de la categoría
+            if not all(key in data for key in ['id', 'nombre', 'descripcion', 'cargaTrabajo']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para la categoría"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/categoria",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear categoría: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
+def crear_configuracion(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos de la configuración
+            if not all(key in data for key in ['id', 'idCategoria', 'nombre', 'descripcion', 'recursos']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para la configuración"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/configuracion",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear configuración: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
+def crear_cliente(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos del cliente
+            if not all(key in data for key in ['nit', 'nombre', 'usuario', 'clave', 'direccion', 'correoElectronico']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para el cliente"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/cliente",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear cliente: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
+def crear_instancia(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos de la instancia
+            if not all(key in data for key in ['id', 'nitCliente', 'idConfiguracion', 'nombre', 'fechaInicio', 'estado']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para la instancia"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/instancia",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear instancia: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
+def crear_consumo(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Validar datos del consumo
+            if not all(key in data for key in ['nitCliente', 'idInstancia', 'tiempo', 'fechahora']):
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Faltan campos obligatorios para el consumo"
+                })
+            
+            # Enviar al backend Flask
+            response = requests.post(
+                f"{BACKEND_URL}/api/crear/consumo",
+                json=data
+            )
+            
+            if response.status_code == 200:
+                return JsonResponse(response.json())
+            else:
+                return JsonResponse({
+                    "estado": "error",
+                    "mensaje": "Error en el servidor backend"
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                "estado": "error",
+                "mensaje": f"Error al crear consumo: {str(e)}"
+            })
+    
+    return JsonResponse({"estado": "error", "mensaje": "Método no permitido"})
+
 #VISTA PARA PROCESO DE FACTURACION
 def proceso_facturacion(request):
     if request.method == 'POST':
         try:
+            # Verificar si es una solicitud de PDF
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                if data.get('action') == 'generar_pdf':
+                    numero_factura = data.get('numero_factura')
+                    
+                    # Llamar al backend Flask para generar PDF
+                    response = requests.post(
+                        f"{BACKEND_URL}/api/reportes/factura",
+                        json={'numero_factura': numero_factura}
+                    )
+                    
+                    if response.status_code == 200:
+                        return JsonResponse(response.json())
+                    else:
+                        return JsonResponse({
+                            "estado": "error",
+                            "mensaje": "Error generando PDF"
+                        })
+            
+            # Si no es PDF, es facturación normal
+            fecha_inicio = request.POST.get('fecha_inicio')
+            fecha_fin = request.POST.get('fecha_fin')
+            
+            print(f"Procesando facturación: {fecha_inicio} a {fecha_fin}")
+            
             data = {
-                'fecha_inicio': request.POST.get('fecha_inicio'),
-                'fecha_fin': request.POST.get('fecha_fin')
+                'fecha_inicio': fecha_inicio,
+                'fecha_fin': fecha_fin
             }
             
+            # Llamar al backend Flask
             response = requests.post(
                 f"{BACKEND_URL}/api/facturacion/generar",
                 json=data
@@ -123,7 +358,7 @@ def proceso_facturacion(request):
             else:
                 return JsonResponse({
                     "estado": "error",
-                    "mensaje": "Error en el servidor"
+                    "mensaje": "Error en el servidor Flask"
                 })
                 
         except Exception as e:
@@ -132,7 +367,7 @@ def proceso_facturacion(request):
                 "mensaje": f"Error al generar facturas: {str(e)}"
             })
     
-    #GET: Mostrar formulario
+    # GET: Mostrar formulario
     return render(request, 'proceso_facturacion.html')
 
 #VISTA PARA GENERACION DE REPORTES

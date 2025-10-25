@@ -12,7 +12,7 @@
         .report-card h3 { margin-top: 0; color: #574d49; }
         .form-group { margin: 15px 0; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="date"] { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; width: 100%; }
+        input[type="date"], input[type="text"] { padding: 8px; border: 1px solid #ced4da; border-radius: 4px; width: 100%; }
         .btn { 
             padding: 10px 20px; 
             background: #ee7314; 
@@ -24,6 +24,9 @@
         }
         .btn:hover { background: #c25f0f; }
         .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+        .resultado { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
@@ -34,23 +37,25 @@
             <!-- REPORTE 1: DETALLE DE FACTURA -->
             <div class="report-card">
                 <h3>Detalle de Factura</h3>
-                <p>Genere un reporte detallado de una factura especifica con desglose de recursos y tiempos de consumo</p>
-                <form>
+                <p>Genere un reporte detallado de una factura especifica</p>
+                <form id="formFactura">
+                    {% csrf_token %}
                     <div class="form-group">
-                        <label for="numero_factura">Numero de Factura:</label>
-                        <input type="text" id="numero_factura" placeholder="Ej: FAC-001" required>
+                        <label for="numero_factura">Núumero de Factura:</label>
+                        <input type="text" id="numero_factura" placeholder="Ej: FAC-20251024-32644-5" required>
                     </div>
-                    <button type="button" class="btn" onclick="generarReporte('factura')">
+                    <button type="button" class="btn" onclick="generarReporteFactura()">
                         Generar Reporte de Factura
                     </button>
                 </form>
             </div>
 
-            <!-- REPORTE 2: ANALISISI DE VENTAS -->
+            <!-- REPORTE 2: ANÁLISIS DE VENTAS -->
             <div class="report-card">
-                <h3>Analisis de Ventas</h3>
-                <p>Analice las categorias, configuraciones y recursos que mas ingresos generan en un periodo especifico</p>
-                <form>
+                <h3>Análisis de Ventas</h3>
+                <p>Analice las categorias y recursos que mas ingresos generan</p>
+                <form id="formVentas">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="fecha_inicio_ventas">Fecha Inicio:</label>
                         <input type="date" id="fecha_inicio_ventas" required>
@@ -69,50 +74,94 @@
                             Recursos
                         </label>
                     </div>
-                    <button type="button" class="btn" onclick="generarReporte('ventas')">
-                        Generar Analisis de Ventas
+                    <button type="button" class="btn" onclick="generarAnalisisVentas()">
+                        Generar Análisis de Ventas
                     </button>
                 </form>
             </div>
         </div>
 
-        <div id="resultado" style="margin-top: 20px; padding: 15px; border-radius: 4px; display: none;"></div>
+        <div id="resultado" class="resultado"></div>
 
         <a href="{% url 'index' %}" class="back-link">Volver al Inicio</a>
     </div>
 
     <script>
-        function generarReporte(tipo) {
+        function generarReporteFactura() {
+            const numeroFactura = document.getElementById('numero_factura').value;
             const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.style.display = 'block';
             
-            if (tipo === 'factura') {
-                resultadoDiv.innerHTML = `
-                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 4px;">
-                        <strong>Reporte de Factura</strong>
-                        <p>Esta funcionalidad genera un PDF con:</p>
-                        <ul>
-                            <li>Datos completos de la factura seleccionada</li>
-                            <li>Detalle de montos por cada instancia</li>
-                            <li>Tiempos de consumo especificos</li>
-                            <li>Desglose de recursos y su aporte al total</li>
-                        </ul>
-                    </div>
-                `;
-            } else if (tipo === 'ventas') {
-                resultadoDiv.innerHTML = `
-                    <div style="background: #cce7ff; color: #004085; padding: 15px; border-radius: 4px;">
-                        <strong>Analisis de Ventas</strong>
-                        <p>Esta funcionalidad genera un PDF con analisis de:</p>
-                        <ul>
-                            <li>Categorias y configuraciones mas rentables</li>
-                            <li>Recursos que mas ingresos generan</li>
-                            <li>Graficos de tendencias de ventas</li>
-                            <li>Comparativas por periodos</li>
-                        </ul>
-                    </div>
-                `;
+            if (!numeroFactura) {
+                alert('Por favor ingrese el número de factura');
+                return;
             }
+            
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            resultadoDiv.innerHTML = '<p>Generando reporte de factura...</p>';
+            
+            //Llamar al backend a travez de Django
+            fetch("{% url 'proceso_facturacion' %}", {
+                method: 'POST',
+                body: JSON.stringify({
+                    'action': 'generar_pdf',
+                    'numero_factura': numeroFactura
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.estado === 'exito') {
+                    resultadoDiv.className = 'resultado exito';
+                    resultadoDiv.innerHTML = `
+                        <strong>Reporte generado con exito</strong>
+                        <p>Archivo: ${data.archivo}</p>
+                        <p>El PDF se ha guardado en: backend/data/reportes/</p>
+                        <button onclick="descargarPDF('${data.archivo}')" class="btn" style="background: #28a745; margin-top: 10px;">
+                            Descargar PDF
+                        </button>
+                    `;
+                } else {
+                    resultadoDiv.className = 'resultado error';
+                    resultadoDiv.innerHTML = `<strong>Error:</strong> ${data.mensaje}`;
+                }
+            })
+            .catch(error => {
+                resultadoDiv.className = 'resultado error';
+                resultadoDiv.innerHTML = `<strong>Error:</strong> ${error}`;
+            });
+        }
+
+        function generarAnalisisVentas() {
+            const fechaInicio = document.getElementById('fecha_inicio_ventas').value;
+            const fechaFin = document.getElementById('fecha_fin_ventas').value;
+            const tipoAnalisis = document.querySelector('input[name="tipo_analisis"]:checked').value;
+            const resultadoDiv = document.getElementById('resultado');
+            
+            if (!fechaInicio || !fechaFin) {
+                alert('Por favor seleccione las fechas');
+                return;
+            }
+            
+            resultadoDiv.style.display = 'block';
+            resultadoDiv.className = 'resultado';
+            resultadoDiv.innerHTML = '<p>Generando análisis de ventas...</p>';
+            
+            resultadoDiv.className = 'resultado exito';
+            resultadoDiv.innerHTML = `
+                <strong>Análisis de Ventas</strong>
+                <p>Esta funcionalidad está en desarrollo.</p>
+                <p>Próximamente podrá generar reportes de analisis de ventas por categorias y recursos</p>
+            `;
+        }
+
+        function descargarPDF(nombreArchivo) {
+            //Descargar desde el backend Flask directamente
+            const pdfUrl = `http://127.0.0.1:5000/api/reportes/descargar/${nombreArchivo}`;
+            window.open(pdfUrl, '_blank');
         }
     </script>
 </body>

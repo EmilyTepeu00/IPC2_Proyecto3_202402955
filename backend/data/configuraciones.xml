@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<configuraciones />
+<configuraciones><configuracion id="1" idCategoria="1"><nombre>C1C1</nombre><description>Configuración alta</description><recursosConfiguracion><recurso id="1">16.0</recurso><recurso id="2">8.0</recurso></recursosConfiguracion></configuracion><configuracion id="2" idCategoria="1"><nombre>C1C2</nombre><description>Configuración baja</description><recursosConfiguracion><recurso id="2">2.0</recurso><recurso id="3">50.0</recurso></recursosConfiguracion></configuracion></configuraciones>

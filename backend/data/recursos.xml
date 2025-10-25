@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<recursos />
+<recursos><recurso id="1"><nombre>Memoria de Acceso Aleatorio</nombre><abreviatura>RAM</abreviatura><metrica>Gb</metrica><tipo>HARDWARE</tipo><valorXhora>40.0</valorXhora></recurso><recurso id="2"><nombre>Unidad Central de Procesamiento</nombre><abreviatura>CPU</abreviatura><metrica>Núcleos</metrica><tipo>HARDWARE</tipo><valorXhora>50.0</valorXhora></recurso><recurso id="3"><nombre>Disco Duro Sólido</nombre><abreviatura>SSD</abreviatura><metrica>Gb</metrica><tipo>HARDWARE</tipo><valorXhora>30.0</valorXhora></recurso></recursos>

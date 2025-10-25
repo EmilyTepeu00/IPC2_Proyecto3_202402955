@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<clientes />
+<clientes><cliente nit="32644-5"><nombre>ipc</nombre><usuario>prueba</usuario><clave>proyecto</clave><direccion>Direccion del cliente</direccion><correoElectronico>eMailCliente</correoElectronico><listaInstancias /></cliente></clientes>

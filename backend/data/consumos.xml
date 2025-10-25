@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='utf-8'?>
-<consumos />
+<consumos><consumo nitCliente="32644-5" idInstancia="2"><tiempo>6.2</tiempo><fechahora>15/06/2005 08:30</fechahora></consumo><consumo nitCliente="32644-5" idInstancia="2"><tiempo>1.0</tiempo><fechahora>19/07/2004 15:14</fechahora></consumo><consumo nitCliente="32644-5" idInstancia="2"><tiempo>18.5</tiempo><fechahora>14/08/2003 12:45</fechahora></consumo><consumo nitCliente="32644-5" idInstancia="2"><tiempo>5.7</tiempo><fechahora>03/05/2008 09:00</fechahora></consumo><consumo nitCliente="32644-5" idInstancia="2"><tiempo>9.2</tiempo><fechahora>21/11/2005 20:16</fechahora></consumo></consumos>
